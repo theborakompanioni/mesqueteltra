@@ -4,8 +4,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.tbk.mesqueteltra.ext.impl.RegexTopicPolicy;
-import org.tbk.mesqueteltra.ext.spi.ITopicPolicy;
+import org.tbk.mesqueteltra.moquette.ext.impl.RegexTopicPolicy;
+import org.tbk.mesqueteltra.moquette.ext.spi.ITopicPolicy;
 
 @Configuration
 public class MoquetteTopicPolicyConfig {

@@ -1,4 +1,4 @@
-package org.tbk.mesqueteltra.ext.spi;
+package org.tbk.mesqueteltra.moquette.ext.spi;
 
 import io.moquette.spi.impl.subscriptions.Topic;
 

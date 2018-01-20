@@ -1,10 +1,10 @@
-package org.tbk.mesqueteltra.ext.impl;
+package org.tbk.mesqueteltra.moquette.ext.impl;
 
 import io.moquette.spi.impl.subscriptions.Topic;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
-import org.tbk.mesqueteltra.ext.spi.ITopicPolicy;
+import org.tbk.mesqueteltra.moquette.ext.spi.ITopicPolicy;
 
 import static java.util.Objects.requireNonNull;
 
