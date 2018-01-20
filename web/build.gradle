@@ -1,0 +1,60 @@
+description = 'Sample Vertx and spring-boot app'
+buildscript {
+    ext {
+        moquetteVersion = '0.10'
+    }
+}
+
+apply plugin: 'org.springframework.boot'
+
+bootRun {
+    addResources = true
+}
+
+springBoot {
+    backupSource = false
+}
+
+bootRepackage {
+    mainClass = 'org.tbk.mesqueteltra.Application'
+}
+
+dependencies {
+    compile "io.vertx:vertx-rx-java:${vertxVersion}"
+    compile "io.vertx:vertx-reactive-streams:${vertxVersion}"
+    compile "io.vertx:vertx-dropwizard-metrics:${vertxVersion}"
+    compile "io.vertx:vertx-health-check:${vertxVersion}"
+
+    compile "org.amv.vertx:amv-vertx-spring-boot-starter:${amvVertxVersion}"
+
+    compile "io.moquette:moquette-broker:${moquetteVersion}"
+
+    compile('org.springframework.boot:spring-boot-starter-web')
+
+    compile "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+    compile "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-hibernate5:${jacksonVersion}"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
+
+    compile 'org.springframework.boot:spring-boot-starter-actuator'
+    compile 'org.springframework.boot:spring-boot-devtools'
+
+    // tag::jetty[]
+    compile('org.springframework.boot:spring-boot-starter-web') {
+        exclude module: 'spring-boot-starter-tomcat'
+        //exclude group: 'commons-logging', module: 'commons-logging'
+    }
+    compile 'org.springframework.boot:spring-boot-starter-jetty'
+    compile "org.eclipse.jetty:jetty-jmx:${jettyVersion}"
+    // end::jetty[]
+
+    // tag:prometheus time-series database for monitoring
+    compile "io.prometheus:simpleclient:${prometheusVersion}"
+    compile "io.prometheus:simpleclient_hotspot:${prometheusVersion}"
+    compile "io.prometheus:simpleclient_guava:${prometheusVersion}"
+    compile "io.prometheus:simpleclient_servlet:${prometheusVersion}"
+    compile "io.prometheus:simpleclient_jetty:${prometheusVersion}"
+    compile "io.prometheus:simpleclient_spring_boot:${prometheusVersion}"
+    // end:prometheus
+}

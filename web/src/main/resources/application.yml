@@ -1,0 +1,19 @@
+app.name: mesqueteltra
+app.description: MQTT server demo
+
+debug: true
+
+spring.profiles.active: production
+spring.application.name: ${app.name} (${spring.profiles.active})
+
+server.context-path: /mesqueteltra
+server.port: 9000
+server.use-forward-headers: true
+server.compression.enabled: true
+
+#security.user.name: john_doe
+#security.user.password: mysupersecretpassword
+
+management.security.enabled: false
+management.port: 9001
+management.context-path: /manage
