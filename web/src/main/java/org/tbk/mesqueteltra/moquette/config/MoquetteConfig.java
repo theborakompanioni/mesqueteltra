@@ -14,6 +14,10 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.tbk.mesqueteltra.ext.impl.RegexTopicPolicy;
+import org.tbk.mesqueteltra.ext.spi.ITopicPolicy;
 import org.tbk.mesqueteltra.moquette.SimpleAuthenticator;
 import org.tbk.mesqueteltra.moquette.SimpleAuthorizator;
 
@@ -36,8 +40,8 @@ public class MoquetteConfig {
     }
 
     @Bean
-    public IAuthorizator authorizator() {
-        return new SimpleAuthorizator();
+    public IAuthorizator authorizator(List<ITopicPolicy> topicPolicies) {
+        return new SimpleAuthorizator(topicPolicies);
     }
 
     @Bean
