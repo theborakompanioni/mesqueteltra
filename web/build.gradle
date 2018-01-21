@@ -7,6 +7,11 @@ buildscript {
 
 apply plugin: 'org.springframework.boot'
 
+clean.doFirst {
+    delete "${rootDir}/.~zookeeper"
+    delete "${rootDir}/.~kafka"
+}
+
 bootRun {
     addResources = true
 }
@@ -29,6 +34,20 @@ dependencies {
 
     compile "io.moquette:moquette-broker:${moquetteVersion}"
 
+    compile("org.apache.kafka:kafka_2.12:1.0.0") {
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    }
+    compile("org.apache.kafka:kafka-streams:1.0.0") {
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    }
+    compile ('org.springframework.kafka:spring-kafka:2.1.1.RELEASE') {
+        exclude group: 'org.apache.kafka', module: 'kafka_2.11'
+    }
+    testCompile ('org.springframework.kafka:spring-kafka-test:2.1.1.RELEASE') {
+        exclude group: 'org.apache.kafka', module: 'kafka_2.11'
+    }
+
+
     compile('org.springframework.boot:spring-boot-starter-web')
 
     compile "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
@@ -38,7 +57,7 @@ dependencies {
     compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
 
     compile 'org.springframework.boot:spring-boot-starter-actuator'
-    compile 'org.springframework.boot:spring-boot-devtools'
+    //compile 'org.springframework.boot:spring-boot-devtools'
 
     // tag::jetty[]
     compile('org.springframework.boot:spring-boot-starter-web') {

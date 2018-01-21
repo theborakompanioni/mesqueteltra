@@ -11,6 +11,8 @@ app-management.port
 *.db-wal
 application-local-*.yml
 .vertx/
+.~zookeeper/
+.~kafka/
 
 ### Intellij ###
 .idea/
