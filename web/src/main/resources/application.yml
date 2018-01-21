@@ -21,5 +21,12 @@ management.context-path: /manage
 #spring.kafka.consumer.group-id: foo
 #spring.kafka.consumer.auto-offset-reset: earliest
 
-mesqueteltra.kafka.enabled: true
-mesqueteltra.redis.enabled: true
+mesqueteltra.kafka:
+  enabled: false
+
+mesqueteltra.redis:
+  enabled: true
+  port: 18931
+
+spring.redis:
+  port: 18931
