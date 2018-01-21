@@ -1,4 +1,4 @@
-package org.tbk.mesqueteltra.moquette.handler;
+package org.tbk.mesqueteltra.kafka.mqtt.handler;
 
 import com.google.common.base.Charsets;
 import io.moquette.interception.InterceptHandler;
@@ -46,12 +46,12 @@ public class KafkaHandler implements InterceptHandler {
         future.addCallback(new ListenableFutureCallback<SendResult<String, String>>() {
             @Override
             public void onSuccess(SendResult<String, String> result) {
-                log.info("sent CONNECT from client: {} ({})", msg.getUsername(), msg.getClientID());
+                log.info("sent CONNECT from stream: {} ({})", msg.getUsername(), msg.getClientID());
             }
 
             @Override
             public void onFailure(Throwable t) {
-                log.warn("error while sending CONNECT from client: {} ({})", msg.getUsername(), msg.getClientID());
+                log.warn("error while sending CONNECT from stream: {} ({})", msg.getUsername(), msg.getClientID());
                 log.error("", t);
             }
         });

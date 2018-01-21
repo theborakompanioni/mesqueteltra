@@ -11,6 +11,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.StreamsConfig;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
@@ -24,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 @EnableKafka
 @EnableKafkaStreams
 @Configuration
+@ConditionalOnProperty(value = "mesqueteltra.kafka.enabled", havingValue = "true")
 public class KafkaSpringConfig {
 
     @Bean

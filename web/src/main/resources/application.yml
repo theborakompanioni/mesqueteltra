@@ -18,5 +18,8 @@ management.security.enabled: false
 management.port: 9001
 management.context-path: /manage
 
-spring.kafka.consumer.group-id: foo
-spring.kafka.consumer.auto-offset-reset: earliest
+#spring.kafka.consumer.group-id: foo
+#spring.kafka.consumer.auto-offset-reset: earliest
+
+mesqueteltra.kafka.enabled: true
+mesqueteltra.redis.enabled: true

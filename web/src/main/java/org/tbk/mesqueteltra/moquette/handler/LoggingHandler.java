@@ -21,22 +21,22 @@ public class LoggingHandler implements InterceptHandler {
 
     @Override
     public void onConnect(InterceptConnectMessage msg) {
-        log.info("CONNECT from client: {} ({})", msg.getUsername(), msg.getClientID());
+        log.info("CONNECT from stream: {} ({})", msg.getUsername(), msg.getClientID());
     }
 
     @Override
     public void onDisconnect(InterceptDisconnectMessage msg) {
-        log.info("DISCONNECT from client: {} ({})", msg.getUsername(), msg.getClientID());
+        log.info("DISCONNECT from stream: {} ({})", msg.getUsername(), msg.getClientID());
     }
 
     @Override
     public void onConnectionLost(InterceptConnectionLostMessage msg) {
-        log.info("CONNECTION LOST from client: {} ({})", msg.getUsername(), msg.getClientID());
+        log.info("CONNECTION LOST from stream: {} ({})", msg.getUsername(), msg.getClientID());
     }
 
     @Override
     public void onPublish(InterceptPublishMessage msg) {
-        log.info("onPublish from client: {} ({})", msg.getUsername(), msg.getClientID());
+        log.info("onPublish from stream: {} ({})", msg.getUsername(), msg.getClientID());
         log.info("topic: {}", msg.getTopicName());
 
         ByteBuf payload = msg.getPayload();
@@ -45,19 +45,19 @@ public class LoggingHandler implements InterceptHandler {
 
     @Override
     public void onSubscribe(InterceptSubscribeMessage msg) {
-        log.info("SUBSCRIBE from client: {} ({})", msg.getUsername(), msg.getClientID());
+        log.info("SUBSCRIBE from stream: {} ({})", msg.getUsername(), msg.getClientID());
         log.info("topic filter: {}", msg.getTopicFilter());
     }
 
     @Override
     public void onUnsubscribe(InterceptUnsubscribeMessage msg) {
-        log.info("UNSUBSCRIBE from client: {} ({})", msg.getUsername(), msg.getClientID());
+        log.info("UNSUBSCRIBE from stream: {} ({})", msg.getUsername(), msg.getClientID());
         log.info("topic filter: {}", msg.getTopicFilter());
     }
 
     @Override
     public void onMessageAcknowledged(InterceptAcknowledgedMessage msg) {
-        log.info("ACK from client: {}", msg.getUsername());
+        log.info("ACK from stream: {}", msg.getUsername());
         log.info("topic: {}", msg.getTopic());
     }
 }

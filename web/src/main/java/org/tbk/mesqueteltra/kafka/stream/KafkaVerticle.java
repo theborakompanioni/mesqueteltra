@@ -1,9 +1,8 @@
-package org.tbk.mesqueteltra.client;
+package org.tbk.mesqueteltra.kafka.stream;
 
 import io.vertx.core.Future;
 import io.vertx.rxjava.core.AbstractVerticle;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;

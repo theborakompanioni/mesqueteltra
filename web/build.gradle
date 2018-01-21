@@ -26,7 +26,7 @@ bootRepackage {
 
 dependencies {
     compile "io.vertx:vertx-rx-java:${vertxVersion}"
-    compile "io.vertx:vertx-reactive-streams:${vertxVersion}"
+    compile "io.vertx:vertx-reactive-stream:${vertxVersion}"
     compile "io.vertx:vertx-dropwizard-metrics:${vertxVersion}"
     compile "io.vertx:vertx-health-check:${vertxVersion}"
 
@@ -42,10 +42,11 @@ dependencies {
     }
     compile ('org.springframework.kafka:spring-kafka:2.1.1.RELEASE') {
         exclude group: 'org.apache.kafka', module: 'kafka_2.11'
+        exclude group: 'org.apache.kafka', module: 'kafka_2.12'
     }
-    testCompile ('org.springframework.kafka:spring-kafka-test:2.1.1.RELEASE') {
+    /*testCompile ('org.springframework.kafka:spring-kafka-test:2.1.1.RELEASE') {
         exclude group: 'org.apache.kafka', module: 'kafka_2.11'
-    }
+    }*/
 
 
     compile('org.springframework.boot:spring-boot-starter-web')

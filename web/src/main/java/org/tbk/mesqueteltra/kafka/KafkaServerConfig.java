@@ -7,6 +7,7 @@ import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 @Slf4j
 @Configuration
+@ConditionalOnProperty(value = "mesqueteltra.kafka.enabled", havingValue = "true")
 public class KafkaServerConfig {
 
     @Bean
@@ -29,7 +31,7 @@ public class KafkaServerConfig {
 
     @Bean
     public KafkaConfig kafkaSedrverStartable(Properties kafkaProperties) {
-        boolean enableLogging = true;
+        boolean enableLogging = false;
         return new KafkaConfig(kafkaProperties, enableLogging);
     }
 
