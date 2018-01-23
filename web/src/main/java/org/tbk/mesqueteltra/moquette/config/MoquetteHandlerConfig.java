@@ -13,10 +13,4 @@ public class MoquetteHandlerConfig {
     public LoggingHandler loggingHandler() {
         return new LoggingHandler();
     }
-
-    @Bean
-    public KafkaHandler kafkaHandler(KafkaTemplate<String, String> kafkaTemplate) {
-        return new KafkaHandler(kafkaTemplate);
-    }
-
 }

@@ -8,7 +8,10 @@ import io.moquette.spi.impl.subscriptions.Topic;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import lombok.extern.slf4j.Slf4j;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.Pipeline;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -18,12 +21,12 @@ import java.util.stream.Collectors;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 @Slf4j
-public class RedisMessageStore implements IMessagesStore {
+public class PooledRedisMessageStore implements IMessagesStore {
 
-    private final Jedis jedis;
+    private final JedisPool jedisPool;
 
-    public RedisMessageStore(Jedis jedis) {
-        this.jedis = jedis;
+    public PooledRedisMessageStore(JedisPool jedisPool) {
+        this.jedisPool = jedisPool;
     }
 
     @Override
@@ -35,7 +38,8 @@ public class RedisMessageStore implements IMessagesStore {
     public Collection<StoredMessage> searchMatching(IMatchingCondition iMatchingCondition) {
         String redisHashRegex = topicNameToRedisKey("*");
 
-        Set<String> keys = jedis.keys(redisHashRegex);
+        Jedis resource = jedisPool.getResource();
+        Set<String> keys = resource.keys(redisHashRegex);
 
         log.info("REDIS searchMatching '{}' found {} key(s)", redisHashRegex, keys.size());
 
@@ -46,7 +50,7 @@ public class RedisMessageStore implements IMessagesStore {
 
         List<StoredMessage> matchingMessages = matchingTopics.stream()
                 .map(this::topicToRedisKey)
-                .map(jedis::hgetAll)
+                .map(resource::hgetAll)
                 .map(this::fromMap)
                 .collect(toImmutableList());
 
@@ -57,12 +61,13 @@ public class RedisMessageStore implements IMessagesStore {
     public void cleanRetained(Topic topic) {
         String redisHash = topicToRedisKey(topic);
 
-        Set<String> keys = jedis.keys(redisHash);
+        Jedis resource = jedisPool.getResource();
+        Set<String> keys = resource.keys(redisHash);
 
         log.info("REDIS clearRetained '{}' found {} key(s)", redisHash, keys.size());
 
         if (!keys.isEmpty()) {
-            jedis.del(keys.toArray(new String[keys.size()]));
+            resource.del(keys.toArray(new String[keys.size()]));
         }
     }
 
@@ -80,7 +85,13 @@ public class RedisMessageStore implements IMessagesStore {
 
         Map<String, String> storedMessageAsMap = toMap(storedMessage);
 
-        storedMessageAsMap.forEach((key, val) -> jedis.hset(redisHash, key, val));
+        Jedis resource = jedisPool.getResource();
+        try (Pipeline pipelined = resource.pipelined()) {
+            storedMessageAsMap.forEach((key, val) -> pipelined.hset(redisHash, key, val));
+            pipelined.sync();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private Map<String, String> toMap(StoredMessage storedMessage) {

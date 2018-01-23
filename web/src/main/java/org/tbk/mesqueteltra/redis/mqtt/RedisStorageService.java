@@ -6,6 +6,7 @@ import io.moquette.spi.IMessagesStore;
 import io.moquette.spi.ISessionsStore;
 import io.moquette.spi.IStore;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
+import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
 import java.util.concurrent.ScheduledExecutorService;
@@ -19,14 +20,19 @@ public class RedisStorageService implements IStore {
         String host = props.getProperty("mesqueteltra_jedis_host", "localhost");
         int port = Integer.valueOf(props.getProperty("mesqueteltra_jedis_port", "9092"));
 
+        //JedisPool jedisPool = createJedisPool(host, port);
+        Jedis jedis = new Jedis(host, port);
+        this.messagesStore = new RedisMessageStore(jedis);
+        this.sessionsStore = new MemorySessionStore();
+    }
+
+    private JedisPool createJedisPool(String host, int port) {
         GenericObjectPoolConfig jedisPoolConfig = new GenericObjectPoolConfig();
         jedisPoolConfig.setMinIdle(10);
         jedisPoolConfig.setMaxIdle(15);
         jedisPoolConfig.setMaxTotal(20);
 
-        JedisPool jedisPool = new JedisPool(host, port);
-        this.messagesStore = new RedisMessageStore(jedisPool);
-        this.sessionsStore = new MemorySessionStore();
+        return new JedisPool(host, port);
     }
 
     @Override
