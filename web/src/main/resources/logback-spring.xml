@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+
+    <springProfile name="production">
+        <include resource="logback-production.xml"/>
+    </springProfile>
+    <springProfile name="!production">
+        <include resource="logback-development.xml"/>
+    </springProfile>
+</configuration>

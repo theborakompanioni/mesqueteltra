@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 @Slf4j
@@ -23,12 +24,12 @@ public class RedisMessageStore implements IMessagesStore {
     private final Jedis jedis;
 
     public RedisMessageStore(Jedis jedis) {
-        this.jedis = jedis;
+        this.jedis = checkNotNull(jedis);
     }
 
     @Override
     public void initStore() {
-
+        // empty on purpose
     }
 
     @Override
@@ -37,7 +38,7 @@ public class RedisMessageStore implements IMessagesStore {
 
         Set<String> keys = jedis.keys(redisHashRegex);
 
-        log.info("REDIS searchMatching '{}' found {} key(s)", redisHashRegex, keys.size());
+        log.debug("REDIS searchMatching '{}' found {} key(s)", redisHashRegex, keys.size());
 
         Set<Topic> matchingTopics = keys.stream()
                 .map(this::redisKeyToTopic)
@@ -59,7 +60,7 @@ public class RedisMessageStore implements IMessagesStore {
 
         Set<String> keys = jedis.keys(redisHash);
 
-        log.info("REDIS clearRetained '{}' found {} key(s)", redisHash, keys.size());
+        log.debug("REDIS clearRetained '{}' found {} key(s)", redisHash, keys.size());
 
         if (!keys.isEmpty()) {
             jedis.del(keys.toArray(new String[keys.size()]));
@@ -68,14 +69,15 @@ public class RedisMessageStore implements IMessagesStore {
 
     @Override
     public void storeRetained(Topic topic, StoredMessage storedMessage) {
-        log.debug("Store retained message for topic={}, CId={}", topic, storedMessage.getClientID());
+        log.trace("About to store retained message for topic={}, CId={}", topic, storedMessage.getClientID());
+
         if (storedMessage.getClientID() == null) {
             throw new IllegalArgumentException("Message to be persisted must have a not null client ID");
         }
 
         String redisHash = topicToRedisKey(topic);
 
-        log.info("REDIS storeRetained '{}': topic={}, clientId={}", redisHash,
+        log.debug("REDIS storeRetained '{}': topic={}, clientId={}", redisHash,
                 storedMessage.getTopic(), storedMessage.getClientID());
 
         Map<String, String> storedMessageAsMap = toMap(storedMessage);
