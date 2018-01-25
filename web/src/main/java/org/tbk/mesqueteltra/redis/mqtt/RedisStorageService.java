@@ -5,20 +5,27 @@ import io.moquette.server.config.IConfig;
 import io.moquette.spi.IMessagesStore;
 import io.moquette.spi.ISessionsStore;
 import io.moquette.spi.IStore;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
 import java.util.concurrent.ScheduledExecutorService;
 
+@Slf4j
 public class RedisStorageService implements IStore {
 
     private final RedisMessageStore messagesStore;
     private final ISessionsStore sessionsStore;
 
+    /**
+     * This constructor is dynamically called by moquette.
+     */
     public RedisStorageService(IConfig props, ScheduledExecutorService scheduler) {
         String host = props.getProperty("mesqueteltra_jedis_host", "localhost");
         int port = Integer.valueOf(props.getProperty("mesqueteltra_jedis_port", "9092"));
+
+        log.info("Creating RedisStorageService with host={}, port={}", host, port);
 
         //JedisPool jedisPool = createJedisPool(host, port);
         Jedis jedis = new Jedis(host, port);
