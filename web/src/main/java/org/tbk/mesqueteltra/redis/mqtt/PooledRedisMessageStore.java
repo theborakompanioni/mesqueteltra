@@ -21,6 +21,8 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 @Slf4j
 public class PooledRedisMessageStore implements IMessagesStore {
 
+    private static final RedisKeys.MqttKey STORED_MESSAGE_KEY = RedisKeys.storedMessage();
+
     private final JedisPool jedisPool;
 
     public PooledRedisMessageStore(JedisPool jedisPool) {
@@ -34,7 +36,7 @@ public class PooledRedisMessageStore implements IMessagesStore {
 
     @Override
     public Collection<StoredMessage> searchMatching(IMatchingCondition iMatchingCondition) {
-        String redisHashRegex = MoreRedisStoredMessages.topicNameToRedisKey("*");
+        String redisHashRegex = STORED_MESSAGE_KEY.wildcard().name();
 
         Jedis resource = jedisPool.getResource();
         Set<String> keys = resource.keys(redisHashRegex);
@@ -42,12 +44,13 @@ public class PooledRedisMessageStore implements IMessagesStore {
         log.debug("REDIS searchMatching '{}' found {} key(s)", redisHashRegex, keys.size());
 
         Set<Topic> matchingTopics = keys.stream()
-                .map(MoreRedisStoredMessages::redisKeyToTopic)
+                .map(STORED_MESSAGE_KEY::toTopic)
                 .filter(iMatchingCondition::match)
                 .collect(Collectors.toSet());
 
         List<StoredMessage> matchingMessages = matchingTopics.stream()
-                .map(MoreRedisStoredMessages::topicToRedisKey)
+                .map(STORED_MESSAGE_KEY::append)
+                .map(RedisKeys.Key::name)
                 .map(resource::hgetAll)
                 .map(MoreRedisStoredMessages::fromMap)
                 .collect(toImmutableList());
@@ -57,7 +60,7 @@ public class PooledRedisMessageStore implements IMessagesStore {
 
     @Override
     public void cleanRetained(Topic topic) {
-        String redisHash = MoreRedisStoredMessages.topicToRedisKey(topic);
+        String redisHash = STORED_MESSAGE_KEY.append(topic).name();
 
         Jedis resource = jedisPool.getResource();
         Set<String> keys = resource.keys(redisHash);
@@ -77,7 +80,7 @@ public class PooledRedisMessageStore implements IMessagesStore {
             throw new IllegalArgumentException("Message to be persisted must have a not null client ID");
         }
 
-        String redisHash = MoreRedisStoredMessages.topicToRedisKey(topic);
+        String redisHash = STORED_MESSAGE_KEY.append(topic).name();
 
         log.debug("REDIS storeRetained '{}': topic={}, clientId={}", redisHash,
                 storedMessage.getTopic(), storedMessage.getClientID());

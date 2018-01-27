@@ -17,6 +17,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 @Slf4j
 public class RedisMessageStore implements IMessagesStore {
+    private static final RedisKeys.MqttKey STORED_MESSAGE_KEY = RedisKeys.storedMessage();
 
     private final Jedis jedis;
 
@@ -31,19 +32,20 @@ public class RedisMessageStore implements IMessagesStore {
 
     @Override
     public Collection<StoredMessage> searchMatching(IMatchingCondition iMatchingCondition) {
-        String redisHashRegex = MoreRedisStoredMessages.topicNameToRedisKey("*");
+        String redisHashRegex = STORED_MESSAGE_KEY.wildcard().name();
 
         Set<String> keys = jedis.keys(redisHashRegex);
 
         log.debug("REDIS searchMatching '{}' found {} key(s)", redisHashRegex, keys.size());
 
         Set<Topic> matchingTopics = keys.stream()
-                .map(MoreRedisStoredMessages::redisKeyToTopic)
+                .map(STORED_MESSAGE_KEY::toTopic)
                 .filter(iMatchingCondition::match)
                 .collect(Collectors.toSet());
 
         List<StoredMessage> matchingMessages = matchingTopics.stream()
-                .map(MoreRedisStoredMessages::topicToRedisKey)
+                .map(STORED_MESSAGE_KEY::append)
+                .map(RedisKeys.Key::name)
                 .map(jedis::hgetAll)
                 .map(MoreRedisStoredMessages::fromMap)
                 .collect(toImmutableList());
@@ -53,7 +55,7 @@ public class RedisMessageStore implements IMessagesStore {
 
     @Override
     public void cleanRetained(Topic topic) {
-        String redisHash = MoreRedisStoredMessages.topicToRedisKey(topic);
+        String redisHash = STORED_MESSAGE_KEY.append(topic).name();
 
         Set<String> keys = jedis.keys(redisHash);
 
@@ -72,7 +74,7 @@ public class RedisMessageStore implements IMessagesStore {
             throw new IllegalArgumentException("Message to be persisted must have a not null client ID");
         }
 
-        String redisHash = MoreRedisStoredMessages.topicToRedisKey(topic);
+        String redisHash = STORED_MESSAGE_KEY.append(topic).name();
 
         log.debug("REDIS storeRetained '{}': topic={}, clientId={}", redisHash,
                 storedMessage.getTopic(), storedMessage.getClientID());

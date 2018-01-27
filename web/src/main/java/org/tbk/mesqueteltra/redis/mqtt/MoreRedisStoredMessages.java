@@ -13,24 +13,8 @@ import java.util.Optional;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class MoreRedisStoredMessages {
-    private static String STORED_MESSAGE_KEY_PREFIX = "mqtt:message_store:";
-
     private MoreRedisStoredMessages() {
         throw new UnsupportedOperationException();
-    }
-
-    public static String topicToRedisKey(Topic topic) {
-        String topicName = topic.toString();
-        return topicNameToRedisKey(topicName);
-    }
-
-    public static Topic redisKeyToTopic(String redisKey) {
-        String topicName = redisKey.replace(STORED_MESSAGE_KEY_PREFIX, "");
-        return new Topic(topicName);
-    }
-
-    public static String topicNameToRedisKey(String topicName) {
-        return String.format("%s:%s", STORED_MESSAGE_KEY_PREFIX, topicName);
     }
 
     public static Map<String, String> toMap(IMessagesStore.StoredMessage storedMessage) {
