@@ -1,4 +1,4 @@
-package org.tbk.mesqueteltra.redis;
+package org.tbk.mesqueteltra.moquette.custom.redis;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

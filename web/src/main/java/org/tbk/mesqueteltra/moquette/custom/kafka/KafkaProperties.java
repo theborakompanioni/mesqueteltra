@@ -1,4 +1,4 @@
-package org.tbk.mesqueteltra.kafka;
+package org.tbk.mesqueteltra.moquette.custom.kafka;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

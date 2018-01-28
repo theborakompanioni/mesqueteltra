@@ -1,10 +1,9 @@
-package org.tbk.mesqueteltra.redis.mqtt;
+package org.tbk.mesqueteltra.moquette.custom.redis.mqtt;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
 import io.moquette.spi.IMessagesStore;
-import io.moquette.spi.impl.subscriptions.Topic;
 import io.netty.handler.codec.mqtt.MqttQoS;
 
 import java.util.Map;

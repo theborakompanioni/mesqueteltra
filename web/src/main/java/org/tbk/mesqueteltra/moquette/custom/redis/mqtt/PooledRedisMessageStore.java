@@ -1,4 +1,4 @@
-package org.tbk.mesqueteltra.redis.mqtt;
+package org.tbk.mesqueteltra.moquette.custom.redis.mqtt;
 
 import io.moquette.spi.IMatchingCondition;
 import io.moquette.spi.IMessagesStore;

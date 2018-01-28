@@ -1,4 +1,4 @@
-package org.tbk.mesqueteltra.redis;
+package org.tbk.mesqueteltra.moquette.custom.redis;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.DisposableBean;

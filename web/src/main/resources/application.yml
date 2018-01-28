@@ -21,12 +21,19 @@ management.context-path: /manage
 #spring.kafka.consumer.group-id: foo
 #spring.kafka.consumer.auto-offset-reset: earliest
 
-mesqueteltra.kafka:
-  enabled: false
+spring.redis:
+  port: 18931
 
 mesqueteltra.redis:
   enabled: true
-  port: 18931
+  port: ${spring.redis.port}
 
-spring.redis:
-  port: 18931
+mesqueteltra.kafka:
+  enabled: false
+
+mesqueteltra.mqtt.client:
+  enabled: true
+  broker: tcp://localhost:1883
+  client-name: mesqueteltra-client
+  user: root
+  password: public

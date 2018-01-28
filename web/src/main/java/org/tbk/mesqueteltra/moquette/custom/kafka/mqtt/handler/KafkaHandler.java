@@ -1,4 +1,4 @@
-package org.tbk.mesqueteltra.kafka.mqtt.handler;
+package org.tbk.mesqueteltra.moquette.custom.kafka.mqtt.handler;
 
 import com.google.common.base.Charsets;
 import io.moquette.interception.InterceptHandler;

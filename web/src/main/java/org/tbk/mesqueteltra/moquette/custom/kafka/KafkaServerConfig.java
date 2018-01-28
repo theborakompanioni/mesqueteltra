@@ -1,4 +1,4 @@
-package org.tbk.mesqueteltra.kafka;
+package org.tbk.mesqueteltra.moquette.custom.kafka;
 
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServerStartable;
@@ -8,7 +8,6 @@ import org.apache.zookeeper.server.ZooKeeperServerMain;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

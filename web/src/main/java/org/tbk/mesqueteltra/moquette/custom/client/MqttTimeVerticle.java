@@ -1,4 +1,4 @@
-package org.tbk.mesqueteltra.client;
+package org.tbk.mesqueteltra.moquette.custom.client;
 
 import com.google.common.base.Charsets;
 import io.moquette.server.Server;

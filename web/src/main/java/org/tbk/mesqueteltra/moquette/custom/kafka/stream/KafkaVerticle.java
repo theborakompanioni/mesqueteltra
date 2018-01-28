@@ -1,4 +1,4 @@
-package org.tbk.mesqueteltra.kafka.stream;
+package org.tbk.mesqueteltra.moquette.custom.kafka.stream;
 
 import io.vertx.core.Future;
 import io.vertx.rxjava.core.AbstractVerticle;

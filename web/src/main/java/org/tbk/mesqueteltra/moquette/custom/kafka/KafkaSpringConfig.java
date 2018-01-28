@@ -1,4 +1,4 @@
-package org.tbk.mesqueteltra.kafka;
+package org.tbk.mesqueteltra.moquette.custom.kafka;
 
 import com.google.common.collect.Maps;
 import kafka.server.KafkaConfig;
@@ -6,11 +6,8 @@ import lombok.Builder;
 import lombok.Value;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.apache.kafka.streams.StreamsConfig;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,7 +17,6 @@ import org.springframework.kafka.core.*;
 import org.springframework.util.StringUtils;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 @EnableKafka
 @EnableKafkaStreams

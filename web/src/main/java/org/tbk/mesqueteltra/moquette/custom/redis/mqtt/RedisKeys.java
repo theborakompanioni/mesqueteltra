@@ -1,4 +1,4 @@
-package org.tbk.mesqueteltra.redis.mqtt;
+package org.tbk.mesqueteltra.moquette.custom.redis.mqtt;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;

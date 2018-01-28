@@ -1,4 +1,4 @@
-package org.tbk.mesqueteltra.kafka;
+package org.tbk.mesqueteltra.moquette.custom.kafka;
 
 import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;

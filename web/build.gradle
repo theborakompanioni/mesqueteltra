@@ -2,6 +2,7 @@ description = 'Sample Vertx and spring-boot app'
 buildscript {
     ext {
         moquetteVersion = '0.10'
+        eclipsePahoVersion = '1.2.0'
     }
 }
 
@@ -32,9 +33,15 @@ dependencies {
     compile "io.vertx:vertx-health-check:${vertxVersion}"
 
     compile "org.amv.vertx:amv-vertx-spring-boot-starter:${amvVertxVersion}"
-    // vertx -- send
+    // vertx -- end
 
+    // mqtt broker -- start
     compile "io.moquette:moquette-broker:${moquetteVersion}"
+    // mqtt broker -- end
+
+    // mqtt client -- start
+    compile "org.eclipse.paho:org.eclipse.paho.client.mqttv3:${eclipsePahoVersion}"
+    // mqtt client -- end
 
     // kafka -- start
     compile("org.apache.kafka:kafka_2.12:1.0.0") {

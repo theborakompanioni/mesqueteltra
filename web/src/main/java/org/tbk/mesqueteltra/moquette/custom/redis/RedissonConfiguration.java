@@ -1,8 +1,7 @@
-package org.tbk.mesqueteltra.redis;
+package org.tbk.mesqueteltra.moquette.custom.redis;
 
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
-import org.redisson.api.RedissonReactiveClient;
 import org.redisson.config.Config;
 import org.redisson.config.SentinelServersConfig;
 import org.redisson.config.SingleServerConfig;
