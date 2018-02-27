@@ -33,7 +33,7 @@ mesqueteltra.kafka:
 
 mesqueteltra.mqtt.client:
   enabled: true
-  broker: tcp://localhost:1883
+  broker: tcp://localhost:18831
   client-name: mesqueteltra-client
   user: root
   password: public

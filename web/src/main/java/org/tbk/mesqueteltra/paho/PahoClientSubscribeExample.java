@@ -3,18 +3,19 @@ package org.tbk.mesqueteltra.paho;
 import com.google.common.base.Charsets;
 import com.google.common.util.concurrent.RateLimiter;
 import io.moquette.server.Server;
-import io.netty.buffer.Unpooled;
-import io.netty.handler.codec.mqtt.MqttMessageBuilders;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationListener;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.Arrays;
 
 @Slf4j
-public class PahoClientSubscribeExample {
+public class PahoClientSubscribeExample implements ApplicationListener<ApplicationReadyEvent> {
 
     @Autowired
     MqttClient mqttClient;
@@ -25,24 +26,43 @@ public class PahoClientSubscribeExample {
 
     RateLimiter rateLimiter = RateLimiter.create(1);
 
+    @PreDestroy
+    public void shutdown() throws MqttException {
+        mqttClient.disconnect();
+    }
+
     @PostConstruct
     public void init() throws MqttException {
+        mqttClient.connect(mqttConnectOptions);
+        log.info("Connected");
+    }
+
+    @Override
+    public void onApplicationEvent(ApplicationReadyEvent event) {
+        try {
+            publishHelloWorldMessage();
+
+            subscribe();
+        } catch (MqttException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void publishHelloWorldMessage() throws MqttException {
         String topic = "/hello";
         String content = "hello world";
         int qos = 2;
 
-        mqttClient.connect(mqttConnectOptions);
-
-        log.info("Connected");
-        log.info("Publishing message: {}", content);
-
         MqttMessage message = new MqttMessage(content.getBytes());
         message.setQos(qos);
+        message.setRetained(true);
 
+        log.info("Publishing message: {}", content);
         mqttClient.publish(topic, message);
-
         log.info("Message published");
+    }
 
+    private void subscribe() throws MqttException {
         mqttClient.subscribe("/#", new IMqttMessageListener() {
             @Override
             public void messageArrived(String topic, MqttMessage message) throws MqttException {
@@ -59,19 +79,21 @@ public class PahoClientSubscribeExample {
                     }
                 }
 
+                /*
+                // do NOT publish to the broker it is connected to!
                 server.internalPublish(MqttMessageBuilders.publish()
                         .messageId(message.getId())
                         .topicName(topic)
                         .retained(message.isRetained())
                         .qos(MqttQoS.valueOf(message.getQos()))
                         .payload(Unpooled.copiedBuffer(message.getPayload()))
-                        .build(), "INTRLPUB");
+                        .build(), "INTRLPUB");*/
 
             }
         });
     }
 
-    public MqttMessage pongMessage() {
+    private MqttMessage pongMessage() {
         MqttMessage message = new MqttMessage("pong".getBytes(Charsets.UTF_8));
         message.setQos(MqttQoS.AT_LEAST_ONCE.value());
         message.setRetained(false);
