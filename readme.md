@@ -18,3 +18,5 @@ ipfs daemon --enable-pubsub-experiment
 ssh -L 5001:localhost:5001 -L 4001:localhost:4001 -L 8080:localhost:8080  user@remote-ip
 ```
 
+See IPFS messages on topic '/time': http://127.0.0.1:5001/api/v0/pubsub/sub?arg=/time
+
