@@ -1,3 +1,5 @@
 rootProject.name = 'mesqueteltra'
 
 include 'web'
+include 'ipfs'
+

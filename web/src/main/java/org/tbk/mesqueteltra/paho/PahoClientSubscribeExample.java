@@ -9,9 +9,13 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
+import org.tbk.mesqueteltra.IpfsService;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 @Slf4j
@@ -23,8 +27,10 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
     MqttConnectOptions mqttConnectOptions;
     @Autowired
     Server server;
+    @Autowired
+    IpfsService ipfsService;
 
-    RateLimiter rateLimiter = RateLimiter.create(1);
+    RateLimiter rateLimiter = RateLimiter.create(0.2f);
 
     @PreDestroy
     public void shutdown() throws MqttException {
@@ -40,17 +46,18 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
         try {
+            subscribe();
+
             publishHelloWorldMessage();
 
-            subscribe();
         } catch (MqttException e) {
             throw new RuntimeException(e);
         }
     }
 
     private void publishHelloWorldMessage() throws MqttException {
-        String topic = "/hello";
-        String content = "hello world";
+        String topic = "hello";
+        String content = "hello";
         int qos = 2;
 
         MqttMessage message = new MqttMessage(content.getBytes());
@@ -63,6 +70,12 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
     }
 
     private void subscribe() throws MqttException {
+        subscribeIpfsForever("/time")
+                .subscribeOn(Schedulers.newSingle("ipfs-subscribe"))
+                .subscribe(msg -> {
+                    log.info("Message arrived via IPFS {}", msg.getDataAsString());
+                });
+
         mqttClient.subscribe("/#", new IMqttMessageListener() {
             @Override
             public void messageArrived(String topic, MqttMessage message) throws MqttException {
@@ -79,6 +92,14 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
                     }
                 }
 
+                if (rateLimiter.tryAcquire()) {
+                    final String s = new String(message.getPayload(), StandardCharsets.UTF_8);
+                    ipfsService.publish(topic, s)
+                            .subscribeOn(Schedulers.elastic())
+                            .subscribe();
+                }
+
+
                 /*
                 // do NOT publish to the broker it is connected to!
                 server.internalPublish(MqttMessageBuilders.publish()
@@ -91,6 +112,11 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
 
             }
         });
+    }
+
+    private Flux<IpfsService.IpfsMsg> subscribeIpfsForever(String topic) {
+        return Flux.from(ipfsService.subscribe(topic))
+                .onErrorResume(e -> subscribeIpfsForever(topic));
     }
 
     private MqttMessage pongMessage() {
