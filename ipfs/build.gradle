@@ -7,6 +7,10 @@ buildscript {
 
 apply plugin: 'org.springframework.boot'
 
+bootRepackage {
+    enabled = false
+}
+
 dependencies {
     compile "com.github.ipfs:java-ipfs-api:${ipfsVersion}"
 

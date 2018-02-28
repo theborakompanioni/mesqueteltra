@@ -1,5 +1,7 @@
 package org.tbk.mesqueteltra.moquette.config;
 
+import com.google.common.eventbus.AsyncEventBus;
+import com.google.common.eventbus.EventBus;
 import io.moquette.interception.InterceptHandler;
 import io.moquette.server.Server;
 import io.moquette.server.config.ClasspathResourceLoader;
@@ -14,17 +16,25 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.tbk.mesqueteltra.moquette.ext.spi.ITopicPolicy;
 import org.tbk.mesqueteltra.moquette.SimpleAuthenticator;
 import org.tbk.mesqueteltra.moquette.SimpleAuthorizator;
+import org.tbk.mesqueteltra.moquette.config.ServerWithInternalPublish.InterceptHandlerWithInternalMessageSupport;
+import org.tbk.mesqueteltra.moquette.config.ServerWithInternalPublish.MoquettePublishInternalBridge;
+import org.tbk.mesqueteltra.moquette.ext.spi.ITopicPolicy;
 
 import javax.net.ssl.SSLContext;
 import java.util.List;
+import java.util.concurrent.Executors;
 
 import static java.util.Objects.requireNonNull;
 
 @Configuration
 public class MoquetteConfig {
+
+    @Bean
+    public MoquettePublishInternalBridge moquettePublishInternalBridge(EventBus eventBus, List<InterceptHandlerWithInternalMessageSupport> handler) {
+        return new MoquettePublishInternalBridge(eventBus, handler);
+    }
 
     @Bean
     public IResourceLoader resourceLoader() {
@@ -56,9 +66,14 @@ public class MoquetteConfig {
         };
     }
 
-    @Bean
+    @Bean(destroyMethod = "stopServer")
     public Server moquetteServer() {
-        return new Server();
+        return new ServerWithInternalPublish(googleEventBus());
+    }
+
+    @Bean
+    public EventBus googleEventBus() {
+        return new AsyncEventBus(Executors.newSingleThreadExecutor());
     }
 
     @Bean
@@ -112,4 +127,5 @@ public class MoquetteConfig {
             log.info("MQTT Server stopped");
         }
     }
+
 }

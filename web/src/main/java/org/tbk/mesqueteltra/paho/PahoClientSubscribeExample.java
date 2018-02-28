@@ -30,7 +30,7 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
     @Autowired
     IpfsService ipfsService;
 
-    RateLimiter rateLimiter = RateLimiter.create(0.2f);
+    RateLimiter rateLimiter = RateLimiter.create(1);
 
     @PreDestroy
     public void shutdown() throws MqttException {
@@ -91,15 +91,6 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
                         mqttClient.publish(topic, answer);
                     }
                 }
-
-                if (rateLimiter.tryAcquire()) {
-                    final String s = new String(message.getPayload(), StandardCharsets.UTF_8);
-                    ipfsService.publish(topic, s)
-                            .subscribeOn(Schedulers.elastic())
-                            .subscribe();
-                }
-
-
                 /*
                 // do NOT publish to the broker it is connected to!
                 server.internalPublish(MqttMessageBuilders.publish()
