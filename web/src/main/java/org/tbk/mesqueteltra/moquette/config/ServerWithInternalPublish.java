@@ -60,7 +60,9 @@ public class ServerWithInternalPublish extends Server {
     }
 
     public interface InterceptHandlerWithInternalMessageSupport extends InterceptHandler {
-        void onInternalPublish(InterceptInternalPublishedMessage msg);
+        default void onInternalPublish(InterceptInternalPublishedMessage msg) {
+            // empty on purpose
+        }
     }
 
 
