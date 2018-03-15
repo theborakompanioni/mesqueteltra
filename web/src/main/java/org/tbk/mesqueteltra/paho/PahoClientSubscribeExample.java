@@ -15,7 +15,6 @@ import reactor.core.scheduler.Schedulers;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 @Slf4j
@@ -70,10 +69,10 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
     }
 
     private void subscribe() throws MqttException {
-        subscribeIpfsForever("/time")
+        Flux.from(ipfsService.subscribe("/time"))
                 .subscribeOn(Schedulers.newSingle("ipfs-subscribe"))
                 .subscribe(msg -> {
-                    log.info("Message arrived via IPFS {}", msg.getDataAsString());
+                    log.info("Message arrived via IPFS on topic {}: {}", msg.getTopicIds(), msg.getDataAsString());
                 });
 
         mqttClient.subscribe("/#", new IMqttMessageListener() {
@@ -103,11 +102,6 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
 
             }
         });
-    }
-
-    private Flux<IpfsService.IpfsMsg> subscribeIpfsForever(String topic) {
-        return Flux.from(ipfsService.subscribe(topic))
-                .onErrorResume(e -> subscribeIpfsForever(topic));
     }
 
     private MqttMessage pongMessage() {

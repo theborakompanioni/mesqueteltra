@@ -22,7 +22,7 @@ public interface IpfsService {
 
 
     @Value
-    @Builder
+    @Builder(toBuilder = true)
     class IpfsMsg {
         private String fromBase64;
         private String dataBase64;
