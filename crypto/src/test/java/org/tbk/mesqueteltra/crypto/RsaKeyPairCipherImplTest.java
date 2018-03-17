@@ -8,14 +8,17 @@ import java.security.KeyPair;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-public class KeyPairCipherImplTest {
+public class RsaKeyPairCipherImplTest {
+    static {
+        MoreProviders.addBounceCastleProvider();
+    }
 
-    private KeyPairCipherImpl sut;
+    private RsaKeyPairCipherImpl sut;
 
     @Before
     public void setUp() {
-        final KeyPair keyPair = new KeyPairFactoryImpl().createKeyPair();
-        this.sut = new KeyPairCipherImpl(keyPair);
+        final KeyPair keyPair = new RsaKeyPairFactoryImpl().createKeyPair();
+        this.sut = new RsaKeyPairCipherImpl(keyPair);
     }
 
     @Test

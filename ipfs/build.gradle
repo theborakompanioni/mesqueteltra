@@ -1,4 +1,4 @@
-description = 'Sample Vertx and spring-boot app'
+description = 'Please enter a meaningful description...'
 buildscript {
     ext {
         ipfsVersion = 'v1.2.0'
@@ -12,6 +12,8 @@ bootRepackage {
 }
 
 dependencies {
+    compile project(':crypto')
+
     compile "com.github.ipfs:java-ipfs-api:${ipfsVersion}"
 
     compile('org.springframework.boot:spring-boot-starter-web')

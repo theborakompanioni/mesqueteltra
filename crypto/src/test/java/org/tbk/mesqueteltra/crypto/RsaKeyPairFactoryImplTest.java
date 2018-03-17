@@ -12,13 +12,16 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
-public class KeyPairFactoryImplTest {
+public class RsaKeyPairFactoryImplTest {
+    static {
+        MoreProviders.addBounceCastleProvider();
+    }
 
-    private KeyPairFactoryImpl sut;
+    private RsaKeyPairFactoryImpl sut;
 
     @Before
     public void setUp() {
-        this.sut = new KeyPairFactoryImpl();
+        this.sut = new RsaKeyPairFactoryImpl();
     }
 
     @Test
@@ -33,7 +36,7 @@ public class KeyPairFactoryImplTest {
 
 
     public static void main(String[] args) {
-        KeyPair keyPair = new KeyPairFactoryImpl().createKeyPair();
+        KeyPair keyPair = new RsaKeyPairFactoryImpl().createKeyPair();
         PrivateKey privateKey = keyPair.getPrivate();
         PublicKey publicKey = keyPair.getPublic();
 

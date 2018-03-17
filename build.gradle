@@ -114,6 +114,8 @@ subprojects {
         testCompile 'pl.pragmatists:JUnitParams:1.1.0'
         testCompile "org.mockito:mockito-core:${mockitoVersion}"
         testCompile 'org.apache.commons:commons-lang3:3.6'
+        testCompile 'org.apache.commons:commons-text:1.2'
+
     }
 
     lombok {

@@ -1,0 +1,21 @@
+description = 'Please enter a meaningful description...'
+buildscript {
+    ext {
+        bouncycastleVersion = '1.59'
+    }
+}
+
+apply plugin: 'org.springframework.boot'
+
+bootRepackage {
+    enabled = false
+}
+
+dependencies {
+    compile group: 'org.bouncycastle', name: 'bcprov-jdk15on', version: "$bouncycastleVersion"
+    compile group: 'org.bouncycastle', name: 'bcpkix-jdk15on', version: "$bouncycastleVersion"
+
+    compile group: 'commons-codec', name: 'commons-codec', version: '1.11'
+
+    compile('org.springframework.boot:spring-boot-starter-web')
+}

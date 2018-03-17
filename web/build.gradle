@@ -1,4 +1,4 @@
-description = 'Sample Vertx and spring-boot app'
+description = 'Please enter a meaningful description...'
 buildscript {
     ext {
         moquetteVersion = '0.10'

@@ -8,13 +8,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
+import org.tbk.mesqueteltra.crypto.Issuer;
 import org.tbk.mesqueteltra.crypto.KeyPairCipher;
-import org.tbk.mesqueteltra.crypto.KeyPairCipherImpl;
-import org.tbk.mesqueteltra.crypto.KeyPairFactory;
-import org.tbk.mesqueteltra.crypto.KeyPairFactoryImpl;
+import org.tbk.mesqueteltra.crypto.RsaKeyPairCipherImpl;
 
 import java.io.IOException;
-import java.security.KeyPair;
 
 import static java.util.Objects.requireNonNull;
 
@@ -39,22 +37,10 @@ public class IpfsConfig {
         return ipfs;
     }
 
-
     @Bean
-    public KeyPairCipher keyPairCipher(KeyPair keyPair) {
-        return new KeyPairCipherImpl(keyPair);
+    public KeyPairCipher keyPairCipher(Issuer issuer) {
+        return new RsaKeyPairCipherImpl(issuer.getKeyPair());
     }
-
-    @Bean
-    public KeyPairFactory keyPairFactory() {
-        return new KeyPairFactoryImpl();
-    }
-
-    @Bean
-    public KeyPair keyPair(KeyPairFactory keyPairFactory) {
-        return keyPairFactory.createKeyPair();
-    }
-
 
     @Bean
     public IpfsService ipfsService(IPFS ipfs) {
