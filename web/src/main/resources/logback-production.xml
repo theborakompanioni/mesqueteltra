@@ -5,5 +5,8 @@
 
     <logger name="org.tbk.mesqueteltra" level="INFO"/>
 
-    <logger name="io.moquette.spi.impl.ProtocolProcessor" level="INFO"/>
+    <logger name="io.moquette.spi.impl.ProtocolProcessor" level="WARN"/>
+    <logger name="io.moquette.spi.impl.PersistentQueueMessageSender" level="WARN"/>
+    <logger name="io.moquette.server.ConnectionDescriptorStore" level="WARN"/>
+    <logger name="messageLogger" level="WARN"/>
 </included>

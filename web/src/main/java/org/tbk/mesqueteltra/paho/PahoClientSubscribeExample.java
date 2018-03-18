@@ -16,6 +16,7 @@ import reactor.core.scheduler.Schedulers;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.Arrays;
+import java.util.Optional;
 
 @Slf4j
 public class PahoClientSubscribeExample implements ApplicationListener<ApplicationReadyEvent> {
@@ -27,7 +28,7 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
     @Autowired
     Server server;
     @Autowired
-    IpfsService ipfsService;
+    Optional<IpfsService> ipfsService;
 
     RateLimiter rateLimiter = RateLimiter.create(1);
 
@@ -69,11 +70,11 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
     }
 
     private void subscribe() throws MqttException {
-        Flux.from(ipfsService.subscribe("/time"))
+        ipfsService.ifPresent(ipfsService -> Flux.from(ipfsService.subscribe("/time"))
                 .subscribeOn(Schedulers.newSingle("ipfs-subscribe"))
                 .subscribe(msg -> {
                     log.info("Message arrived via IPFS on topic {}: {}", msg.getTopicIds(), msg.getDataAsString());
-                });
+                }));
 
         mqttClient.subscribe("/#", new IMqttMessageListener() {
             @Override

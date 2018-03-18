@@ -9,7 +9,7 @@ gradlew clean build
 
 ### IPFS
 ```
-ipfs daemon --enable-pubsub-experiment
+ipfs daemon --enable-pubsub-experiment --enable-gc &
 ```
 
 

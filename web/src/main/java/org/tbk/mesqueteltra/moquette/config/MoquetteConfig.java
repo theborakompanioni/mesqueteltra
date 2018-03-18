@@ -4,16 +4,15 @@ import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
 import io.moquette.interception.InterceptHandler;
 import io.moquette.server.Server;
-import io.moquette.server.config.ClasspathResourceLoader;
 import io.moquette.server.config.IConfig;
-import io.moquette.server.config.IResourceLoader;
-import io.moquette.server.config.ResourceLoaderConfig;
+import io.moquette.server.config.MemoryConfig;
 import io.moquette.spi.security.IAuthenticator;
 import io.moquette.spi.security.IAuthorizator;
 import io.moquette.spi.security.ISslContextCreator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.tbk.mesqueteltra.moquette.SimpleAuthenticator;
@@ -24,26 +23,32 @@ import org.tbk.mesqueteltra.moquette.ext.spi.ITopicPolicy;
 
 import javax.net.ssl.SSLContext;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.Executors;
 
 import static java.util.Objects.requireNonNull;
 
 @Configuration
+@EnableConfigurationProperties({
+        MoquetteProperties.class
+})
+
 public class MoquetteConfig {
+
+    @Bean
+    public IConfig config(MoquetteProperties moquetteProperties) {
+        Properties properties = new Properties();
+        properties.setProperty("port", String.valueOf(moquetteProperties.getPort()));
+        properties.setProperty("websocket_port", String.valueOf(moquetteProperties.getWebsocketPort()));
+        properties.setProperty("allow_anonymous", String.valueOf(moquetteProperties.isAllowAnonymous()));
+        properties.setProperty("host", moquetteProperties.getHost());
+
+        return new MemoryConfig(properties);
+    }
 
     @Bean
     public MoquettePublishInternalBridge moquettePublishInternalBridge(EventBus eventBus, List<InterceptHandlerWithInternalMessageSupport> handler) {
         return new MoquettePublishInternalBridge(eventBus, handler);
-    }
-
-    @Bean
-    public IResourceLoader resourceLoader() {
-        return new ClasspathResourceLoader();
-    }
-
-    @Bean
-    public IConfig config() {
-        return new ResourceLoaderConfig(resourceLoader());
     }
 
     @Bean

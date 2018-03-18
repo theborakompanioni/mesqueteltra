@@ -24,7 +24,19 @@ management.context-path: /manage
 spring.redis:
   port: 18931
 
+mesqueteltra.mqtt.server:
+  port: 18831
+  websocket-port: 18883
+  client-name: mesqueteltra-client
+  host: 0.0.0.0
+  allow-anonymous: false
 
+mesqueteltra.mqtt.client:
+  enabled: true
+  broker: tcp://localhost:18831
+  client-name: mesqueteltra-client
+  user: root
+  password: public
 
 mesqueteltra.ipfs:
   enabled: true
@@ -37,10 +49,3 @@ mesqueteltra.redis:
 
 mesqueteltra.kafka:
   enabled: false
-
-mesqueteltra.mqtt.client:
-  enabled: true
-  broker: tcp://localhost:18831
-  client-name: mesqueteltra-client
-  user: root
-  password: public
