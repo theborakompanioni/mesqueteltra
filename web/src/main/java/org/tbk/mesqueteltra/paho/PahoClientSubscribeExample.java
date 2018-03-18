@@ -79,7 +79,7 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
         mqttClient.subscribe("/#", new IMqttMessageListener() {
             @Override
             public void messageArrived(String topic, MqttMessage message) throws MqttException {
-                log.info("Message arrived in topic {}: {}", topic, message);
+                log.info("Message arrived via MQTT in topic {}: {}", topic, message);
 
                 boolean isPingMessage = Arrays.equals(message.getPayload(),
                         "ping".getBytes(Charsets.UTF_8));

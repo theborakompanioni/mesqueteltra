@@ -25,18 +25,28 @@ spring.redis:
   port: 18931
 
 mesqueteltra.mqtt.server:
-  port: 18831
-  websocket-port: 18883
+  port: 18881
+  websocket-port: 18882
   client-name: mesqueteltra-client
   host: 0.0.0.0
   allow-anonymous: false
+  ssl:
+    port: 18883
+    jks-path: 'keystore/example/example_keystore.jks'
+    key-store-password: example
+    key-manager-password: example
 
 mesqueteltra.mqtt.client:
   enabled: true
-  broker: tcp://localhost:18831
-  client-name: mesqueteltra-client
-  user: root
-  password: public
+  broker: ssl://localhost:18883
+  #broker: tcp://localhost:18881
+  #broker: ws://localhost:18882
+  client-name: example-client
+  user: example-user
+  password: example
+  ssl:
+    jks-path: 'keystore/example/client_example_keystore.jks'
+    key-store-password: example
 
 mesqueteltra.ipfs:
   enabled: true

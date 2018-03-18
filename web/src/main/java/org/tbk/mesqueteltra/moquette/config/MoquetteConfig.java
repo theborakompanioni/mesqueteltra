@@ -17,12 +17,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.tbk.mesqueteltra.moquette.SimpleAuthenticator;
 import org.tbk.mesqueteltra.moquette.SimpleAuthorizator;
+import org.tbk.mesqueteltra.moquette.config.MoquetteProperties.MoquetteSslProperties;
 import org.tbk.mesqueteltra.moquette.config.ServerWithInternalPublish.InterceptHandlerWithInternalMessageSupport;
 import org.tbk.mesqueteltra.moquette.config.ServerWithInternalPublish.MoquettePublishInternalBridge;
 import org.tbk.mesqueteltra.moquette.ext.spi.ITopicPolicy;
 
 import javax.net.ssl.SSLContext;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 
@@ -43,6 +45,15 @@ public class MoquetteConfig {
         properties.setProperty("allow_anonymous", String.valueOf(moquetteProperties.isAllowAnonymous()));
         properties.setProperty("host", moquetteProperties.getHost());
 
+        final Optional<MoquetteSslProperties> sslOptional = moquetteProperties.getSsl();
+        if (sslOptional.isPresent()) {
+            MoquetteSslProperties ssl = sslOptional.get();
+            properties.setProperty("ssl_port", String.valueOf(ssl.getPort()));
+            properties.setProperty("jks_path", ssl.getJksPath());
+            properties.setProperty("key_store_password", ssl.getKeyStorePassword());
+            properties.setProperty("key_manager_password", ssl.getKeyManagerPassword());
+        }
+
         return new MemoryConfig(properties);
     }
 
@@ -62,7 +73,7 @@ public class MoquetteConfig {
     }
 
     @Bean
-    public ISslContextCreator sslContextCreator() {
+    public ISslContextCreator sslContextCreator(IConfig config) {
         return new ISslContextCreator() {
             @Override
             public SSLContext initSSLContext() {
@@ -118,7 +129,7 @@ public class MoquetteConfig {
         public void afterPropertiesSet() throws Exception {
             log.info("Starting MQTT Server");
 
-            moquetteServer.startServer(config, handlers, sslContextCreator, authenticator, authorizator);
+            moquetteServer.startServer(config, handlers, null /* sslContextCreator*/, authenticator, authorizator);
 
             log.info("MQTT Server started");
         }

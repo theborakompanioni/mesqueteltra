@@ -7,6 +7,21 @@ mesqueteltra
 gradlew clean build
 ```
 
+### MQTT
+Starts a MQTT broker on port `18881` by default.
+It includes an example keystore including a self signed certificate with password `example`.
+```
+keytool -genkey -keyalg RSA -alias selfsigned -keystore example_keystore.jks -storepass example -validity 99999 -keysize 2048
+```
+and a client example keystore that trusts the self signed certificate:
+```
+keytool -importkeystore -srckeystore example_keystore.jks -destkeystore example_keystore.p12 -srcstoretype jks -deststoretype pkcs12
+openssl pkcs12 -in example_keystore.p12 -out example_keystore.pem
+openssl x509 -outform der -in example_keystore.pem -out example_keystore.der
+keytool -import -keystore client_example_keystore.jks -file example_keystore.der
+```
+
+
 ### IPFS
 ```
 ipfs daemon --enable-pubsub-experiment --enable-gc &
