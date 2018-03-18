@@ -14,6 +14,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Scope;
 import org.tbk.mesqueteltra.paho.PahoClientProperties.PahoSslProperties;
 
@@ -53,7 +54,8 @@ public class PahoClientConfig {
     }
 
     @Bean(destroyMethod = "disconnectForcibly")
-    @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+    @Primary
+    //@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
     public MqttClient mqttClient(MqttClientPersistence persistence) throws MqttException {
         String clientId = String.format("%s-%s",
                 pahoClientProperties.getClientName(), UUID.randomUUID());
@@ -61,7 +63,7 @@ public class PahoClientConfig {
     }
 
     @Bean
-    public MqttConnectOptions mqttConnectOptions() {
+    public MqttConnectOptions mqttConnectOptions(PahoClientProperties pahoClientProperties) {
         MqttConnectOptions connOpts = new MqttConnectOptions();
         connOpts.setCleanSession(true);
         connOpts.setWill("/goodbye",

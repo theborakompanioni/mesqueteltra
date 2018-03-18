@@ -1,12 +1,11 @@
 package org.tbk.mesqueteltra.paho;
 
 import com.google.common.base.Charsets;
-import com.google.common.util.concurrent.RateLimiter;
-import io.moquette.server.Server;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
 import org.tbk.mesqueteltra.IpfsService;
@@ -15,6 +14,8 @@ import reactor.core.scheduler.Schedulers;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -22,24 +23,44 @@ import java.util.Optional;
 public class PahoClientSubscribeExample implements ApplicationListener<ApplicationReadyEvent> {
 
     @Autowired
+    @Qualifier("mqttClient")
     MqttClient mqttClient;
+
     @Autowired
+    @Qualifier("mqttConnectOptions")
     MqttConnectOptions mqttConnectOptions;
+
     @Autowired
-    Server server;
+    @Qualifier("mqttClientA")
+    MqttClient mqttClientA;
+
+    @Autowired
+    @Qualifier("mqttConnectOptionsA")
+    MqttConnectOptions mqttConnectOptionsA;
+
+    @Autowired
+    @Qualifier("mqttClientB")
+    MqttClient mqttClientB;
+
+    @Autowired
+    @Qualifier("mqttConnectOptionsA")
+    MqttConnectOptions mqttConnectOptionsB;
+
     @Autowired
     Optional<IpfsService> ipfsService;
-
-    RateLimiter rateLimiter = RateLimiter.create(1);
 
     @PreDestroy
     public void shutdown() throws MqttException {
         mqttClient.disconnect();
+        mqttClientA.disconnect();
+        mqttClientB.disconnect();
     }
 
     @PostConstruct
     public void init() throws MqttException {
         mqttClient.connect(mqttConnectOptions);
+        mqttClientA.connect(mqttConnectOptionsA);
+        mqttClientB.connect(mqttConnectOptionsB);
         log.info("Connected");
     }
 
@@ -69,6 +90,18 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
         log.info("Message published");
     }
 
+    private void publishHeartbeatMessage(MqttClient mqttClient) throws MqttException {
+        String topic = "/heartbeat";
+        String content = "empty";
+        int qos = 2;
+
+        MqttMessage message = new MqttMessage(content.getBytes());
+        message.setQos(qos);
+        message.setRetained(true);
+
+        mqttClient.publish(topic, message);
+    }
+
     private void subscribe() throws MqttException {
         ipfsService.ifPresent(ipfsService -> Flux.from(ipfsService.subscribe("/time"))
                 .subscribeOn(Schedulers.newSingle("ipfs-subscribe"))
@@ -76,37 +109,89 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
                     log.info("Message arrived via IPFS on topic {}: {}", msg.getTopicIds(), msg.getDataAsString());
                 }));
 
-        mqttClient.subscribe("/#", new IMqttMessageListener() {
+        mqttClientA.subscribe("/#", new IMqttMessageListener() {
             @Override
             public void messageArrived(String topic, MqttMessage message) throws MqttException {
-                log.info("Message arrived via MQTT in topic {}: {}", topic, message);
+                log.info("[A] Message arrived via MQTT in topic {}: {}", topic, message);
 
                 boolean isPingMessage = Arrays.equals(message.getPayload(),
                         "ping".getBytes(Charsets.UTF_8));
 
                 if (isPingMessage) {
-                    if (rateLimiter.tryAcquire()) {
-                        MqttMessage answer = pongMessage();
-                        log.info("Answering with message in topic {}: {}", topic, answer);
-                        mqttClient.publish(topic, answer);
-                    }
+                    Flux.just(mqttClientA)
+                            .delayElements(Duration.of(5, ChronoUnit.SECONDS))
+                            .filter(MqttClient::isConnected)
+                            .subscribe(client -> {
+                                MqttMessage answer = pongMessage();
+                                log.info("[A] Answering with message in topic {}: {}", topic, answer);
+                                try {
+                                    client.publish(topic, answer);
+                                } catch (MqttException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            });
                 }
-                /*
-                // do NOT publish to the broker it is connected to!
-                server.internalPublish(MqttMessageBuilders.publish()
-                        .messageId(message.getId())
-                        .topicName(topic)
-                        .retained(message.isRetained())
-                        .qos(MqttQoS.valueOf(message.getQos()))
-                        .payload(Unpooled.copiedBuffer(message.getPayload()))
-                        .build(), "INTRLPUB");*/
-
             }
         });
+
+        mqttClientB.subscribe("/#", new IMqttMessageListener() {
+            @Override
+            public void messageArrived(String topic, MqttMessage message) throws MqttException {
+                log.info("[B] Message arrived via MQTT in topic {}: {}", topic, message);
+
+                boolean isPongMessage = Arrays.equals(message.getPayload(),
+                        "pong".getBytes(Charsets.UTF_8));
+
+                if (isPongMessage) {
+                    Flux.just(mqttClientB)
+                            .delayElements(Duration.of(5, ChronoUnit.SECONDS))
+                            .filter(MqttClient::isConnected)
+                            .subscribe(client -> {
+                                MqttMessage answer = pingMessage();
+                                log.info("[B] Answering with message in topic {}: {}", topic, answer);
+                                try {
+                                    client.publish(topic, answer);
+                                } catch (MqttException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            });
+                }
+            }
+        });
+
+        Flux.just(mqttClientB)
+                .delayElements(Duration.of(10, ChronoUnit.SECONDS))
+                .filter(MqttClient::isConnected)
+                .subscribe(client -> {
+                    try {
+                        client.publish("/ping-pong", pingMessage());
+                    } catch (MqttException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+        Flux.just(mqttClientB)
+                .delayElements(Duration.of(15, ChronoUnit.SECONDS))
+                .filter(MqttClient::isConnected)
+                .subscribe(client -> {
+                    try {
+                        publishHeartbeatMessage(client);
+                    } catch (MqttException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
     }
 
     private MqttMessage pongMessage() {
         MqttMessage message = new MqttMessage("pong".getBytes(Charsets.UTF_8));
+        message.setQos(MqttQoS.AT_LEAST_ONCE.value());
+        message.setRetained(false);
+        return message;
+    }
+
+    private MqttMessage pingMessage() {
+        MqttMessage message = new MqttMessage("ping".getBytes(Charsets.UTF_8));
         message.setQos(MqttQoS.AT_LEAST_ONCE.value());
         message.setRetained(false);
         return message;

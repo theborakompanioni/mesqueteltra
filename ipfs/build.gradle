@@ -13,6 +13,7 @@ bootRepackage {
 
 dependencies {
     compile project(':crypto')
+    compile "io.vertx:vertx-rx-java:${vertxVersion}"
 
     compile "com.github.ipfs:java-ipfs-api:${ipfsVersion}"
 

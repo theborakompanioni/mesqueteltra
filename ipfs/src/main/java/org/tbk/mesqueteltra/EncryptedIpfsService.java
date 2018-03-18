@@ -44,19 +44,26 @@ public class EncryptedIpfsService implements IpfsService {
     @Override
     public Flux<IpfsMsg> subscribe(String topic) {
         return delegate.subscribe(topic)
-                .map(msg -> {
-                    final String encryptedStringBase64 = new String(msg.getData(), Charsets.UTF_8);
-                    byte[] encryptedData = BASE64_URLSAFE.decode(encryptedStringBase64);
-
-                    final byte[] decryptedData = keyPairCipher.decrypt(encryptedData);
-                    String decryptedString = new String(decryptedData, Charsets.UTF_8);
-                    String decryptedStringBase64 = Base64.getEncoder()
-                            .encodeToString(decryptedString.getBytes(Charsets.UTF_8));
-
-                    return msg.toBuilder()
-                            .dataBase64(decryptedStringBase64)
-                            .build();
-                });
+                .map(this::decryptData);
     }
 
+    @Override
+    public Flux<IpfsMsg> subscribeToAll() {
+        return delegate.subscribeToAll()
+                .map(this::decryptData);
+    }
+
+    private IpfsMsg decryptData(IpfsMsg msg) {
+        final String encryptedStringBase64 = new String(msg.getData(), Charsets.UTF_8);
+        byte[] encryptedData = BASE64_URLSAFE.decode(encryptedStringBase64);
+
+        final byte[] decryptedData = keyPairCipher.decrypt(encryptedData);
+        String decryptedString = new String(decryptedData, Charsets.UTF_8);
+        String decryptedStringBase64 = Base64.getEncoder()
+                .encodeToString(decryptedString.getBytes(Charsets.UTF_8));
+
+        return msg.toBuilder()
+                .dataBase64(decryptedStringBase64)
+                .build();
+    }
 }

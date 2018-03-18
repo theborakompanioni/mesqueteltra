@@ -6,8 +6,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.util.Optional;
 
 @Data
-@ConfigurationProperties("mesqueteltra.mqtt.client")
-public class PahoClientProperties {
+@ConfigurationProperties("mesqueteltra.mqtt.demo.clientA")
+public class PahoClientAProperties {
     private boolean enabled;
     private String broker = "tcp://localhost:18881";
     private String clientName = "example-client";

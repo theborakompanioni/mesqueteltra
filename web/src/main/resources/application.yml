@@ -48,6 +48,32 @@ mesqueteltra.mqtt.client:
     jks-path: 'keystore/example/client_example_keystore.jks'
     key-store-password: example
 
+
+mesqueteltra.mqtt.demo.clientA:
+  enabled: true
+  broker: ssl://localhost:18883
+  #broker: tcp://localhost:18881
+  #broker: ws://localhost:18882
+  client-name: clientA
+  user: userA
+  password: example
+  ssl:
+    jks-path: 'keystore/example/client_example_keystore.jks'
+    key-store-password: example
+
+mesqueteltra.mqtt.demo.clientB:
+  enabled: true
+  broker: ssl://localhost:18893
+  #broker: tcp://localhost:18881
+  #broker: ws://localhost:18882
+  client-name: clientB
+  user: userB
+  password: example
+  ssl:
+    jks-path: 'keystore/example/client_example_keystore.jks'
+    key-store-password: example
+
+
 mesqueteltra.ipfs:
   enabled: true
   multiaddr: '/ip4/127.0.0.1/tcp/5001'

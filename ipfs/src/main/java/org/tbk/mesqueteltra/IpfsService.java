@@ -20,6 +20,7 @@ public interface IpfsService {
 
     Flux<IpfsMsg> subscribe(String topic);
 
+    Flux<IpfsMsg> subscribeToAll();
 
     @Value
     @Builder(toBuilder = true)
@@ -27,6 +28,7 @@ public interface IpfsService {
         private String fromBase64;
         private String dataBase64;
         private String seqnoBase64;
+        private String serverId;
 
         @Singular("addTopicId")
         private List<String> topicIds;

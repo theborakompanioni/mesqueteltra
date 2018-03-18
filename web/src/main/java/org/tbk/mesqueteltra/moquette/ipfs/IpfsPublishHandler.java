@@ -1,36 +1,40 @@
-package org.tbk.mesqueteltra.moquette.handler;
+package org.tbk.mesqueteltra.moquette.ipfs;
 
 import com.google.common.base.Charsets;
 import com.google.common.util.concurrent.RateLimiter;
 import io.moquette.interception.InterceptHandler;
 import io.moquette.interception.messages.*;
+import io.vertx.core.json.Json;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.tbk.mesqueteltra.IpfsService;
+import org.tbk.mesqueteltra.moquette.config.IpfsableMqttServer;
 import org.tbk.mesqueteltra.moquette.config.ServerWithInternalPublish;
 import reactor.core.scheduler.Schedulers;
+
+import java.util.UUID;
 
 import static java.util.Objects.requireNonNull;
 
 @Slf4j
-public class IpfsHandler implements ServerWithInternalPublish.InterceptHandlerWithInternalMessageSupport {
+public class IpfsPublishHandler implements InterceptHandler {
 
-    private final IpfsService ipfsService;
 
-    // we do not want to spam the network - its a demo!
-    private final RateLimiter rateLimiter = RateLimiter.create(0.2f);
+    private final IpfsableMqttServer ipfsableMqttServer;
 
-    public IpfsHandler(IpfsService ipfsService) {
-        this.ipfsService = requireNonNull(ipfsService);
+    public IpfsPublishHandler(IpfsableMqttServer ipfsableMqttServer) {
+        this.ipfsableMqttServer = ipfsableMqttServer;
     }
 
     @Override
     public String getID() {
-        return "IpfsHandler";
+        return "IpfsPublishHandler";
     }
 
     @Override
     public Class<?>[] getInterceptedMessageTypes() {
-        return InterceptHandler.ALL_MESSAGE_TYPES;
+        //return InterceptHandler.ALL_MESSAGE_TYPES;
+        return new Class[]{InterceptPublishMessage.class};
     }
 
     @Override
@@ -49,13 +53,16 @@ public class IpfsHandler implements ServerWithInternalPublish.InterceptHandlerWi
     @Override
     public void onPublish(InterceptPublishMessage msg) {
         final String content = msg.getPayload().toString(Charsets.UTF_8);
-        doOnPublish(msg.getTopicName(), content);
-    }
 
-    @Override
-    public void onInternalPublish(ServerWithInternalPublish.InterceptInternalPublishedMessage msg) {
-        final String content = msg.getMsg().content().toString(Charsets.UTF_8);
-        doOnPublish(msg.getTopicName(), content);
+        IpfsMqttDto dto = new IpfsMqttDto();
+        dto.setClientId(msg.getClientID());
+        dto.setTopic(msg.getTopicName());
+        dto.setContent(content);
+        dto.setQos(msg.getQos().value());
+        dto.setRetained(msg.isRetainFlag());
+        dto.setDuplicate(msg.isDupFlag());
+
+        ipfsableMqttServer.publishToIpfsOnly(dto);
     }
 
     @Override
@@ -70,12 +77,14 @@ public class IpfsHandler implements ServerWithInternalPublish.InterceptHandlerWi
     public void onMessageAcknowledged(InterceptAcknowledgedMessage msg) {
     }
 
-
-    private void doOnPublish(String topic, String content) {
-        if (rateLimiter.tryAcquire()) {
-            ipfsService.publish(topic, content)
-                    .subscribeOn(Schedulers.elastic())
-                    .subscribe();
-        }
+    @Data
+    public static class IpfsMqttDto {
+        private String serverId;
+        private String content;
+        private String topic;
+        private String clientId;
+        private int qos;
+        private boolean retained;
+        private boolean duplicate;
     }
 }

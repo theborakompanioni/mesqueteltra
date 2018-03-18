@@ -21,7 +21,7 @@ public class MoquetteProperties {
     @Data
     public static class MoquetteSslProperties {
         private int port = 18882;
-        private String jksPath = "example_keystore.jks";
+        private String jksPath = "keystore/example/example_keystore.jks";
         private String keyStorePassword = "example";
         private String keyManagerPassword = "example";
     }

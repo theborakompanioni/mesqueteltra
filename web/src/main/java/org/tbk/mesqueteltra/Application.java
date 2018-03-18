@@ -8,6 +8,8 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.system.ApplicationPidFileWriter;
 import org.springframework.boot.system.EmbeddedServerPortFileWriter;
 import org.springframework.context.ApplicationListener;
+import org.springframework.context.annotation.Import;
+import org.tbk.mesqueteltra.moquette.config.MoquetteConfig;
 
 @Slf4j
 @SpringBootApplication

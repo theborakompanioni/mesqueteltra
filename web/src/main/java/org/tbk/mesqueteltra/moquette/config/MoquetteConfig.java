@@ -1,7 +1,6 @@
 package org.tbk.mesqueteltra.moquette.config;
 
-import com.google.common.eventbus.AsyncEventBus;
-import com.google.common.eventbus.EventBus;
+import com.google.common.collect.ImmutableList;
 import io.moquette.interception.InterceptHandler;
 import io.moquette.server.Server;
 import io.moquette.server.config.IConfig;
@@ -11,21 +10,23 @@ import io.moquette.spi.security.IAuthorizator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.env.Environment;
+import org.tbk.mesqueteltra.IpfsService;
 import org.tbk.mesqueteltra.moquette.SimpleAuthenticator;
 import org.tbk.mesqueteltra.moquette.SimpleAuthorizator;
 import org.tbk.mesqueteltra.moquette.config.MoquetteProperties.MoquetteSslProperties;
-import org.tbk.mesqueteltra.moquette.config.ServerWithInternalPublish.InterceptHandlerWithInternalMessageSupport;
-import org.tbk.mesqueteltra.moquette.config.ServerWithInternalPublish.MoquettePublishInternalBridge;
 import org.tbk.mesqueteltra.moquette.ext.spi.ITopicPolicy;
+import org.tbk.mesqueteltra.moquette.handler.LoggingHandler;
+import org.tbk.mesqueteltra.moquette.ipfs.IpfsPublishHandler;
+import org.tbk.mesqueteltra.moquette.ipfs.PublishInternalMqttIpfsSubscriber;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.concurrent.Executors;
+import java.util.*;
 
 import static java.util.Objects.requireNonNull;
 
@@ -33,12 +34,17 @@ import static java.util.Objects.requireNonNull;
 @EnableConfigurationProperties({
         MoquetteProperties.class
 })
-
 public class MoquetteConfig {
+    public static UUID SERVER_ONE_UUID = UUID.randomUUID();
+    public static UUID SERVER_TWO_UUID = UUID.randomUUID();
 
-    @Bean
-    public MoquettePublishInternalBridge moquettePublishInternalBridge(EventBus eventBus, List<InterceptHandlerWithInternalMessageSupport> handler) {
-        return new MoquettePublishInternalBridge(eventBus, handler);
+    private final MoquetteProperties moquetteProperties;
+    private final Environment environment;
+
+    @Autowired
+    public MoquetteConfig(Environment environment, MoquetteProperties moquetteProperties) {
+        this.environment = requireNonNull(environment);
+        this.moquetteProperties = requireNonNull(moquetteProperties);
     }
 
     @Bean
@@ -52,45 +58,89 @@ public class MoquetteConfig {
     }
 
 
-    @Bean
-    public EventBus googleEventBus() {
-        return new AsyncEventBus(Executors.newSingleThreadExecutor());
+    @Bean("mqttServerOne")
+    public Server mqttServerOne() {
+        return createMoquetteServer();
     }
 
 
-    @Bean("serverOne")
+    @Bean("mqttServerTwo")
+    public Server mqttServerTwo() {
+        return createMoquetteServer();
+    }
+
+    @Bean("ipfsMqttServerOne")
     @Primary
-    public Server serverOne() {
-        return moquetteServer();
+    public AbstractIpfsableMqttServer ipfsMqttServerOne(Optional<IpfsService> ipfsOptional) {
+        Server moquetteServer = mqttServerOne();
+        if (!ipfsOptional.isPresent()) {
+            return new IpfsableMqttServerNoop(moquetteServer);
+        }
+
+        return new IpfsableMqttServerImpl(SERVER_ONE_UUID, moquetteServer, ipfsOptional.get());
     }
 
-    @Bean("serverTwo")
-    public Server serverTwo() {
-        return moquetteServer();
+    @Bean("ipfsMqttServerTwo")
+    public AbstractIpfsableMqttServer ipfsMqttServerTwo(Optional<IpfsService> ipfsOptional) {
+        Server moquetteServer = mqttServerTwo();
+        if (!ipfsOptional.isPresent()) {
+            return new IpfsableMqttServerNoop(moquetteServer);
+        }
+
+        return new IpfsableMqttServerImpl(SERVER_TWO_UUID, moquetteServer, ipfsOptional.get());
+
     }
 
     @Bean
-    public MoquetteServerInitializingBean moquetteServerOneInitializer(MoquetteProperties moquetteProperties,
-                                                                       List<? extends InterceptHandler> handlers,
-                                                                       IAuthenticator authenticator,
-                                                                       IAuthorizator authorizator) {
-        Server server = serverOne();
+    public MoquetteServerInitializingBean moquetteServerOneInitializer(
+            IAuthenticator authenticator,
+            IAuthorizator authorizator,
+            Optional<IpfsService> ipfsOptional) {
+        UUID serverOneUuid = SERVER_ONE_UUID;
+        AbstractIpfsableMqttServer ipfsMqttServerOne = ipfsMqttServerOne(ipfsOptional);
         IConfig config = configServerOne(moquetteProperties);
-        return new MoquetteServerInitializingBean(server, config, handlers, authenticator, authorizator);
+        List<InterceptHandler> handlers = ImmutableList.<InterceptHandler>builder()
+                .add(new LoggingHandler(serverOneUuid))
+                .addAll(ipfsOptional
+                        .map(ipfs -> new IpfsPublishHandler(ipfsMqttServerOne))
+                        .map(Collections::singletonList)
+                        .orElse(Collections.emptyList()))
+                .build();
+        return new MoquetteServerInitializingBean(ipfsMqttServerOne, config, handlers, authenticator, authorizator);
     }
 
     @Bean
-    public MoquetteServerInitializingBean moquetteServerTwoInitializer(MoquetteProperties moquetteProperties,
-                                                                       List<? extends InterceptHandler> handlers,
-                                                                       IAuthenticator authenticator,
-                                                                       IAuthorizator authorizator) {
-        Server server = serverTwo();
+    public MoquetteServerInitializingBean moquetteServerTwoInitializer(
+            IAuthenticator authenticator,
+            IAuthorizator authorizator,
+            Optional<IpfsService> ipfsOptional) {
+        UUID serverTwoUuid = SERVER_TWO_UUID;
+        AbstractIpfsableMqttServer ipfsMqttServerTwo = ipfsMqttServerTwo(ipfsOptional);
         IConfig config = configServerTwo(moquetteProperties);
-        return new MoquetteServerInitializingBean(server, config, handlers, authenticator, authorizator);
+        List<InterceptHandler> handlers = ImmutableList.<InterceptHandler>builder()
+                .add(new LoggingHandler(serverTwoUuid))
+                .addAll(ipfsOptional
+                        .map(ipfs -> new IpfsPublishHandler(ipfsMqttServerTwo))
+                        .map(Collections::singletonList)
+                        .orElse(Collections.emptyList()))
+                .build();
+        return new MoquetteServerInitializingBean(ipfsMqttServerTwo, config, handlers, authenticator, authorizator);
     }
 
-    private Server moquetteServer() {
-        return new ServerWithInternalPublish(googleEventBus());
+    @Bean
+    public PublishInternalMqttIpfsSubscriber ipfsSubcriberServerOne(IpfsService ipfsService,
+                                                                    @Qualifier("ipfsMqttServerOne") IpfsableMqttServer serverOne) {
+        return new PublishInternalMqttIpfsSubscriber(ipfsService, serverOne);
+    }
+
+    @Bean
+    public PublishInternalMqttIpfsSubscriber ipfsSubcriberServerTwo(IpfsService ipfsService,
+                                                                    @Qualifier("ipfsMqttServerTwo") IpfsableMqttServer serverTwo) {
+        return new PublishInternalMqttIpfsSubscriber(ipfsService, serverTwo);
+    }
+
+    private Server createMoquetteServer() {
+        return new ServerWithInternalPublish();
     }
 
     private IConfig configServerTwo(MoquetteProperties moquetteProperties) {
