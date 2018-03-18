@@ -50,23 +50,12 @@ public class IpfsHandler implements ServerWithInternalPublish.InterceptHandlerWi
     public void onPublish(InterceptPublishMessage msg) {
         final String content = msg.getPayload().toString(Charsets.UTF_8);
         doOnPublish(msg.getTopicName(), content);
-
-
     }
 
     @Override
     public void onInternalPublish(ServerWithInternalPublish.InterceptInternalPublishedMessage msg) {
         final String content = msg.getMsg().content().toString(Charsets.UTF_8);
         doOnPublish(msg.getTopicName(), content);
-    }
-
-
-    private void doOnPublish(String topic, String content) {
-        if (rateLimiter.tryAcquire()) {
-            ipfsService.publish(topic, content)
-                    .subscribeOn(Schedulers.elastic())
-                    .subscribe();
-        }
     }
 
     @Override
@@ -79,5 +68,14 @@ public class IpfsHandler implements ServerWithInternalPublish.InterceptHandlerWi
 
     @Override
     public void onMessageAcknowledged(InterceptAcknowledgedMessage msg) {
+    }
+
+
+    private void doOnPublish(String topic, String content) {
+        if (rateLimiter.tryAcquire()) {
+            ipfsService.publish(topic, content)
+                    .subscribeOn(Schedulers.elastic())
+                    .subscribe();
+        }
     }
 }

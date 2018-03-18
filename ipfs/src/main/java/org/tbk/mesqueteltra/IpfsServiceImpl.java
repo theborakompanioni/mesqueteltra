@@ -1,5 +1,6 @@
 package org.tbk.mesqueteltra;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import io.ipfs.api.IPFS;
 import io.ipfs.api.MerkleNode;
@@ -9,11 +10,13 @@ import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static com.google.common.io.BaseEncoding.base64Url;
 import static java.util.Objects.requireNonNull;
 
 @Slf4j
@@ -50,7 +53,8 @@ public class IpfsServiceImpl implements IpfsService {
                 .doOnNext(val -> log.info("sending via IPFS: {} {}", topic, data))
                 .map(msg -> {
                     try {
-                        return Optional.ofNullable(ipfs.pubsub.pub(topic, msg));
+                        String encodedMsg = base64Url().encode(data.getBytes(Charsets.UTF_8));
+                        return Optional.ofNullable(ipfs.pubsub.pub(topic, encodedMsg));
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
@@ -98,15 +102,20 @@ public class IpfsServiceImpl implements IpfsService {
         Object data = map.get("data");
         if (data == null) {
             return Optional.empty();
+        } else if (!String.class.isAssignableFrom(data.getClass())) {
+            return Optional.empty();
         } else {
+            String dataAsString = (String) data;
+
             List<String> topics = Lists.newArrayList();
             Object topicIDs = map.get("topicIDs");
-            if (topicIDs != null && List.class.isAssignableFrom(topicIDs.getClass())) {
-                topics.addAll((List) topicIDs);
+            if (topicIDs != null && Collection.class.isAssignableFrom(topicIDs.getClass())) {
+                topics.addAll((Collection) topicIDs);
             }
 
+            String dataBase64 = new String(base64Url().decode(dataAsString), Charsets.UTF_8);
             return Optional.of(IpfsMsg.builder()
-                    .dataBase64((String) data)
+                    .dataBase64(dataBase64)
                     .topicIds(topics)
                     .build());
         }
