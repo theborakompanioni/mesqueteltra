@@ -3,6 +3,9 @@ mesqueteltra
 ====
 
 ### Build
+Make sure you have [Java Cryptography Extension (JCE)](http://www.oracle.com/technetwork/java/javase/downloads/index.html) installed.
+
+Run command:
 ```
 gradlew clean build
 ```
