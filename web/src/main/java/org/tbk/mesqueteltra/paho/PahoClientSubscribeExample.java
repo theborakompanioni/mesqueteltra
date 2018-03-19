@@ -171,6 +171,7 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
                 });
 
         Flux.just(mqttClientB)
+                .repeat()
                 .delayElements(Duration.of(15, ChronoUnit.SECONDS))
                 .filter(MqttClient::isConnected)
                 .subscribe(client -> {
