@@ -23,7 +23,7 @@ public class RedisStorageService implements IStore {
      */
     public RedisStorageService(IConfig props, ScheduledExecutorService scheduler) {
         String host = props.getProperty("mesqueteltra_jedis_host", "localhost");
-        int port = Integer.valueOf(props.getProperty("mesqueteltra_jedis_port", "9092"));
+        int port = Integer.parseInt(props.getProperty("mesqueteltra_jedis_port", "9092"));
 
         log.info("Creating RedisStorageService with host={}, port={}", host, port);
 

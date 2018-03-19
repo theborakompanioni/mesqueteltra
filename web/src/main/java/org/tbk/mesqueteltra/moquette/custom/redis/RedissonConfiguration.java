@@ -28,8 +28,8 @@ public class RedissonConfiguration {
         if (redisProperties.getSentinel() != null) {
             SentinelServersConfig sentinelServersConfig = config.useSentinelServers();
             sentinelServersConfig.setMasterName(redisProperties.getSentinel().getMaster());
-            redisProperties.getSentinel().getNodes();
-            sentinelServersConfig.addSentinelAddress(redisProperties.getSentinel().getNodes().split(","));
+            String[] sentinels = redisProperties.getSentinel().getNodes().split(",");
+            sentinelServersConfig.addSentinelAddress(sentinels);
             sentinelServersConfig.setDatabase(redisProperties.getDatabase());
             if (redisProperties.getPassword() != null) {
                 sentinelServersConfig.setPassword(redisProperties.getPassword());

@@ -81,7 +81,7 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
         String content = "hello";
         int qos = 2;
 
-        MqttMessage message = new MqttMessage(content.getBytes());
+        MqttMessage message = new MqttMessage(content.getBytes(Charsets.UTF_8));
         message.setQos(qos);
         message.setRetained(true);
 
@@ -95,7 +95,7 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
         String content = "empty";
         int qos = 2;
 
-        MqttMessage message = new MqttMessage(content.getBytes());
+        MqttMessage message = new MqttMessage(content.getBytes(Charsets.UTF_8));
         message.setQos(qos);
         message.setRetained(true);
 

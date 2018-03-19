@@ -35,8 +35,8 @@ import static java.util.Objects.requireNonNull;
         MoquetteProperties.class
 })
 public class MoquetteConfig {
-    public static UUID SERVER_ONE_UUID = UUID.randomUUID();
-    public static UUID SERVER_TWO_UUID = UUID.randomUUID();
+    public final static UUID SERVER_ONE_UUID = UUID.randomUUID();
+    public final static UUID SERVER_TWO_UUID = UUID.randomUUID();
 
     private final MoquetteProperties moquetteProperties;
     private final Environment environment;

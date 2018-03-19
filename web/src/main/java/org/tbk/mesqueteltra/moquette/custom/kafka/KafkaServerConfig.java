@@ -77,7 +77,7 @@ public class KafkaServerConfig {
     }
 
     @Bean
-    public EmbeddedKafkaInitializer KafkaServerInitializer(KafkaServerStartable kafkaServer) {
+    public EmbeddedKafkaInitializer kafkaServerInitializer(KafkaServerStartable kafkaServer) {
         return new EmbeddedKafkaInitializer(kafkaServer);
     }
 
