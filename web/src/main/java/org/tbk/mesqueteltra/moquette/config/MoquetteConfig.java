@@ -124,14 +124,12 @@ public class MoquetteConfig {
     }
 
     @Bean
-    @ConditionalOnBean(IpfsService.class)
     public PublishInternalMqttIpfsSubscriber ipfsSubcriberServerOne(IpfsService ipfsService,
                                                                     @Qualifier("ipfsMqttServerOne") IpfsableMqttServer serverOne) {
         return new PublishInternalMqttIpfsSubscriber(ipfsService, serverOne);
     }
 
     @Bean
-    @ConditionalOnBean(IpfsService.class)
     public PublishInternalMqttIpfsSubscriber ipfsSubcriberServerTwo(IpfsService ipfsService,
                                                                     @Qualifier("ipfsMqttServerTwo") IpfsableMqttServer serverTwo) {
         return new PublishInternalMqttIpfsSubscriber(ipfsService, serverTwo);

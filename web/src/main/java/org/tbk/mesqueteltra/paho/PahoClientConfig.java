@@ -65,6 +65,7 @@ public class PahoClientConfig {
     @Bean
     public MqttConnectOptions mqttConnectOptions(PahoClientProperties pahoClientProperties) {
         MqttConnectOptions connOpts = new MqttConnectOptions();
+        connOpts.setAutomaticReconnect(true);
         connOpts.setCleanSession(true);
         connOpts.setWill("/goodbye",
                 "goodbye".getBytes(Charsets.UTF_8),

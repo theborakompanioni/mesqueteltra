@@ -18,6 +18,7 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 @Slf4j
 public class PahoClientSubscribeExample implements ApplicationListener<ApplicationReadyEvent> {
@@ -76,30 +77,10 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
         }
     }
 
-    private void publishHelloWorldMessage() throws MqttException {
-        String topic = "hello";
-        String content = "hello";
-        int qos = 2;
-
-        MqttMessage message = new MqttMessage(content.getBytes(Charsets.UTF_8));
-        message.setQos(qos);
-        message.setRetained(true);
-
-        log.info("Publishing message: {}", content);
-        mqttClient.publish(topic, message);
+    private void publishHelloWorldMessage() {
+        log.info("Publishing 'hello world' message");
+        helloWorldMessagePublisher(mqttClient).blockFirst();
         log.info("Message published");
-    }
-
-    private void publishHeartbeatMessage(MqttClient mqttClient) throws MqttException {
-        String topic = "/heartbeat";
-        String content = "empty";
-        int qos = 2;
-
-        MqttMessage message = new MqttMessage(content.getBytes(Charsets.UTF_8));
-        message.setQos(qos);
-        message.setRetained(true);
-
-        mqttClient.publish(topic, message);
     }
 
     private void subscribe() throws MqttException {
@@ -118,18 +99,11 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
                         "ping".getBytes(Charsets.UTF_8));
 
                 if (isPingMessage) {
-                    Flux.just(mqttClientA)
+                    log.info("[A] Answering with message in topic {}: {}", topic, "pong");
+                    Flux.just(1)
                             .delayElements(Duration.of(5, ChronoUnit.SECONDS))
-                            .filter(MqttClient::isConnected)
-                            .subscribe(client -> {
-                                MqttMessage answer = pongMessage();
-                                log.info("[A] Answering with message in topic {}: {}", topic, answer);
-                                try {
-                                    client.publish(topic, answer);
-                                } catch (MqttException e) {
-                                    throw new RuntimeException(e);
-                                }
-                            });
+                            .flatMap(foo -> pongMessagePublisher(topic, mqttClientA))
+                            .subscribe();
                 }
             }
         });
@@ -143,45 +117,62 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
                         "pong".getBytes(Charsets.UTF_8));
 
                 if (isPongMessage) {
-                    Flux.just(mqttClientB)
+                    log.info("[B] Answering with message in topic {}: {}", topic, "ping");
+                    Flux.just(1)
                             .delayElements(Duration.of(5, ChronoUnit.SECONDS))
-                            .filter(MqttClient::isConnected)
-                            .subscribe(client -> {
-                                MqttMessage answer = pingMessage();
-                                log.info("[B] Answering with message in topic {}: {}", topic, answer);
-                                try {
-                                    client.publish(topic, answer);
-                                } catch (MqttException e) {
-                                    throw new RuntimeException(e);
-                                }
-                            });
+                            .flatMap(foo -> pingMessagePublisher(topic, mqttClientB))
+                            .subscribe();
                 }
             }
         });
 
-        Flux.just(mqttClientB)
+        pingMessagePublisher("/ping-pong", mqttClientB)
                 .delayElements(Duration.of(10, ChronoUnit.SECONDS))
-                .filter(MqttClient::isConnected)
-                .subscribe(client -> {
-                    try {
-                        client.publish("/ping-pong", pingMessage());
-                    } catch (MqttException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+                .subscribe();
 
-        Flux.just(mqttClientB)
-                .repeat()
+        heartbeatMessagePublisher(mqttClientB)
                 .delayElements(Duration.of(15, ChronoUnit.SECONDS))
+                .repeat()
+                .subscribe();
+    }
+
+
+    private Flux<MqttMessage> helloWorldMessagePublisher(MqttClient client) {
+        return messagePublisher("/hello", client, this::helloWorldMessage);
+    }
+
+    private Flux<MqttMessage> pongMessagePublisher(String topic, MqttClient client) {
+        return messagePublisher(topic, client, this::pongMessage);
+    }
+
+    private Flux<MqttMessage> pingMessagePublisher(String topic, MqttClient client) {
+        return messagePublisher(topic, client, this::pingMessage);
+    }
+
+    private Flux<MqttMessage> heartbeatMessagePublisher(MqttClient client) {
+        return messagePublisher("/heartbeat", client, this::heartbeatMessage);
+    }
+
+    private Flux<MqttMessage> messagePublisher(String topic, MqttClient client, Supplier<MqttMessage> messageSupplier) {
+        return Flux.just(client)
                 .filter(MqttClient::isConnected)
-                .subscribe(client -> {
+                .map(c -> {
                     try {
-                        publishHeartbeatMessage(client);
+                        MqttMessage message = messageSupplier.get();
+                        c.publish(topic, message);
+                        return message;
                     } catch (MqttException e) {
                         throw new RuntimeException(e);
                     }
-                });
+                })
+                .onErrorResume(e -> messagePublisher(topic, client, messageSupplier));
+    }
 
+    private MqttMessage heartbeatMessage() {
+        MqttMessage message = new MqttMessage("heartbeat".getBytes(Charsets.UTF_8));
+        message.setQos(MqttQoS.AT_MOST_ONCE.value());
+        message.setRetained(false);
+        return message;
     }
 
     private MqttMessage pongMessage() {
@@ -195,6 +186,13 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
         MqttMessage message = new MqttMessage("ping".getBytes(Charsets.UTF_8));
         message.setQos(MqttQoS.AT_LEAST_ONCE.value());
         message.setRetained(false);
+        return message;
+    }
+
+    private MqttMessage helloWorldMessage() {
+        MqttMessage message = new MqttMessage("hello".getBytes(Charsets.UTF_8));
+        message.setQos(MqttQoS.EXACTLY_ONCE.value());
+        message.setRetained(true);
         return message;
     }
 }

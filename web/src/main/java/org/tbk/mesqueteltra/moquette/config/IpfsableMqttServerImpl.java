@@ -91,7 +91,7 @@ public class IpfsableMqttServerImpl extends DelegatingIpfsableMqttServerImpl {
 
             String json = Json.encode(dto);
 
-            log.info("Publishing via IPFS on topic {}: {}", dto.getTopic(), dto.getContent());
+            log.debug("Publishing via IPFS on topic {}: {}", dto.getTopic(), dto.getContent());
 
             ipfsService.publish(dto.getTopic(), json)
                     .subscribeOn(Schedulers.elastic())
