@@ -32,8 +32,8 @@ public class IpfsConfig {
 
     @Bean
     public IPFS ipfs() throws IOException {
-        final IPFS ipfs = new IPFS(ipfsProperties.getMultiaddr());
-        ipfs.refs.local();
+        IPFS ipfs = createIpfs(ipfsProperties);
+        //ipfs.refs.local();
         return ipfs;
     }
 
@@ -52,5 +52,12 @@ public class IpfsConfig {
     public IpfsService encryptedIpfsService(IPFS ipfs, KeyPairCipher keyPairCipher) {
         IpfsService ipfsService = ipfsService(ipfs);
         return new EncryptedIpfsService(ipfsService, keyPairCipher);
+    }
+
+    private static IPFS createIpfs(IpfsProperties ipfsProperties) throws IOException {
+        if (ipfsProperties.hasHostAndPort()) {
+            return new IPFS(ipfsProperties.getHost(), ipfsProperties.getPort(), ipfsProperties.getPath());
+        }
+        return new IPFS(ipfsProperties.getMultiaddr());
     }
 }

@@ -77,6 +77,9 @@ mesqueteltra.mqtt.demo.clientB:
 mesqueteltra.ipfs:
   enabled: true
   multiaddr: '/ip4/127.0.0.1/tcp/5001'
+  #host: 'ipfs.example.com' #'ipfs.example.com'
+  #port: -1 #-1 means port is not included
+  #path: '/api/v0/' # '/wipfs/api/v0/'
 
 
 mesqueteltra.redis:
