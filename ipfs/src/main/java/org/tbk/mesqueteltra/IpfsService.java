@@ -20,8 +20,6 @@ public interface IpfsService {
 
     Flux<IpfsMsg> subscribe(String topic);
 
-    Flux<IpfsMsg> subscribeToAll();
-
     @Value
     @Builder(toBuilder = true)
     class IpfsMsg {

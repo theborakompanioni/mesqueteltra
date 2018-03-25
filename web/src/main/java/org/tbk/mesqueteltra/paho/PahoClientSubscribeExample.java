@@ -101,9 +101,11 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
                 if (isPingMessage) {
                     log.info("[A] Answering with message in topic {}: {}", topic, "pong");
                     Flux.just(1)
-                            .delayElements(Duration.of(5, ChronoUnit.SECONDS))
+                            .delayElements(Duration.of(3, ChronoUnit.SECONDS))
                             .flatMap(foo -> pongMessagePublisher(topic, mqttClientA))
-                            .subscribe();
+                            .subscribe(msg -> {
+                                log.info("[A] Answered with message in topic {}: {}", topic, msg);
+                            });
                 }
             }
         });
@@ -119,9 +121,11 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
                 if (isPongMessage) {
                     log.info("[B] Answering with message in topic {}: {}", topic, "ping");
                     Flux.just(1)
-                            .delayElements(Duration.of(5, ChronoUnit.SECONDS))
+                            .delayElements(Duration.of(7, ChronoUnit.SECONDS))
                             .flatMap(foo -> pingMessagePublisher(topic, mqttClientB))
-                            .subscribe();
+                            .subscribe(msg -> {
+                                log.info("[B] Answered with message in topic {}: {}", topic, msg);
+                            });
                 }
             }
         });

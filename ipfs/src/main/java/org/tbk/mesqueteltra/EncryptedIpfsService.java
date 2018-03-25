@@ -47,12 +47,6 @@ public class EncryptedIpfsService implements IpfsService {
                 .map(this::decryptData);
     }
 
-    @Override
-    public Flux<IpfsMsg> subscribeToAll() {
-        return delegate.subscribeToAll()
-                .map(this::decryptData);
-    }
-
     private IpfsMsg decryptData(IpfsMsg msg) {
         final String encryptedStringBase64 = new String(msg.getData(), Charsets.UTF_8);
         byte[] encryptedData = BASE64_URLSAFE.decode(encryptedStringBase64);

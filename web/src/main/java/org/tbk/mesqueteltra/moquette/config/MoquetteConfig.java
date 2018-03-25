@@ -12,12 +12,14 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
+import org.tbk.mesqueteltra.IpfsConfig;
 import org.tbk.mesqueteltra.IpfsService;
 import org.tbk.mesqueteltra.moquette.SimpleAuthenticator;
 import org.tbk.mesqueteltra.moquette.SimpleAuthorizator;
@@ -26,11 +28,10 @@ import org.tbk.mesqueteltra.moquette.ext.spi.ITopicPolicy;
 import org.tbk.mesqueteltra.moquette.handler.LoggingHandler;
 import org.tbk.mesqueteltra.moquette.ipfs.IpfsPublishHandler;
 import org.tbk.mesqueteltra.moquette.ipfs.PublishInternalMqttIpfsSubscriber;
+import org.tbk.mesqueteltra.mqtt.MqttIpfsServiceImpl;
+import org.tbk.mesqueteltra.mqtt.Mqttable;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.UUID;
+import java.util.*;
 
 import static java.util.Objects.requireNonNull;
 
@@ -38,6 +39,7 @@ import static java.util.Objects.requireNonNull;
 @EnableConfigurationProperties({
         MoquetteProperties.class
 })
+@AutoConfigureAfter(IpfsConfig.class)
 public class MoquetteConfig {
     public final static UUID SERVER_ONE_UUID = UUID.randomUUID();
     public final static UUID SERVER_TWO_UUID = UUID.randomUUID();
@@ -63,79 +65,101 @@ public class MoquetteConfig {
 
 
     @Bean("mqttServerOne")
-    public Server mqttServerOne() {
+    public ServerWithInternalPublish mqttServerOne() {
         return createMoquetteServer();
     }
 
 
     @Bean("mqttServerTwo")
-    public Server mqttServerTwo() {
+    public ServerWithInternalPublish mqttServerTwo() {
         return createMoquetteServer();
+    }
+
+    @Bean("mqttIpfsBridgeOne")
+    public Mqttable mqttIpfsBridgeOne(IpfsService ipfsService) {
+        return new MqttIpfsServiceImpl(SERVER_ONE_UUID, ipfsService);
+    }
+
+    @Bean("mqttIpfsBridgeTwo")
+    public Mqttable mqttIpfsBridgeTwo(IpfsService ipfsService) {
+        return new MqttIpfsServiceImpl(SERVER_TWO_UUID, ipfsService);
     }
 
     @Bean("ipfsMqttServerOne")
     @Primary
-    public AbstractIpfsableMqttServer ipfsMqttServerOne(@Qualifier("mqttServerOne") Server mqttServerOne,
-                                                        Optional<IpfsService> ipfsOptional) {
+    public AbstractIpfsableMqttServer ipfsMqttServerOne(
+            @Qualifier("mqttServerOne") ServerWithInternalPublish mqttServerOne,
+            @Qualifier("mqttIpfsBridgeOne") Optional<Mqttable> ipfsOptional) {
         if (!ipfsOptional.isPresent()) {
             return new IpfsableMqttServerNoop(mqttServerOne);
         }
 
-        return new IpfsableMqttServerImpl(SERVER_ONE_UUID, mqttServerOne, ipfsOptional.get());
+        return new IpfsableMqttServerImpl(mqttServerOne, ipfsOptional.get());
     }
 
+
     @Bean("ipfsMqttServerTwo")
-    public AbstractIpfsableMqttServer ipfsMqttServerTwo(@Qualifier("mqttServerTwo") Server mqttServerTwo,
-                                                        Optional<IpfsService> ipfsOptional) {
+    public AbstractIpfsableMqttServer ipfsMqttServerTwo(
+            @Qualifier("mqttServerTwo") ServerWithInternalPublish mqttServerTwo,
+            @Qualifier("mqttIpfsBridgeTwo") Optional<Mqttable> ipfsOptional) {
+        ServerWithInternalPublish moquetteServer = mqttServerTwo();
         if (!ipfsOptional.isPresent()) {
             return new IpfsableMqttServerNoop(mqttServerTwo);
         }
 
-        return new IpfsableMqttServerImpl(SERVER_TWO_UUID, mqttServerTwo, ipfsOptional.get());
+        return new IpfsableMqttServerImpl(moquetteServer, ipfsOptional.get());
 
     }
 
-    @Bean
+    @Bean("moquetteServerOneInitializer")
     public MoquetteServerInitializingBean moquetteServerOneInitializer(
-            @Qualifier("ipfsMqttServerOne") AbstractIpfsableMqttServer ipfsMqttServerOne,
             IAuthenticator authenticator,
-            IAuthorizator authorizator) {
+            IAuthorizator authorizator,
+            @Qualifier("ipfsMqttServerOne") AbstractIpfsableMqttServer ipfsMqttServerOne,
+            @Qualifier("mqttIpfsBridgeOne") Optional<Mqttable> ipfsOptional) {
         UUID serverOneUuid = SERVER_ONE_UUID;
         IConfig config = configServerOne(moquetteProperties);
         List<InterceptHandler> handlers = ImmutableList.<InterceptHandler>builder()
                 .add(new LoggingHandler(serverOneUuid))
-                .add(new IpfsPublishHandler(ipfsMqttServerOne))
+                .addAll(ipfsOptional
+                        .map(IpfsPublishHandler::new)
+                        .map(Collections::singletonList)
+                        .orElse(Collections.emptyList()))
                 .build();
         return new MoquetteServerInitializingBean(ipfsMqttServerOne, config, handlers, authenticator, authorizator);
     }
 
-    @Bean
+    @Bean("moquetteServerTwoInitializer")
     public MoquetteServerInitializingBean moquetteServerTwoInitializer(
-            @Qualifier("ipfsMqttServerTwo") AbstractIpfsableMqttServer ipfsMqttServerTwo,
             IAuthenticator authenticator,
-            IAuthorizator authorizator) {
+            IAuthorizator authorizator,
+            @Qualifier("ipfsMqttServerTwo") AbstractIpfsableMqttServer ipfsMqttServerTwo,
+            @Qualifier("mqttIpfsBridgeTwo") Optional<Mqttable> ipfsOptional) {
         UUID serverTwoUuid = SERVER_TWO_UUID;
         IConfig config = configServerTwo(moquetteProperties);
         List<InterceptHandler> handlers = ImmutableList.<InterceptHandler>builder()
                 .add(new LoggingHandler(serverTwoUuid))
-                .add(new IpfsPublishHandler(ipfsMqttServerTwo))
+                .addAll(ipfsOptional
+                        .map(IpfsPublishHandler::new)
+                        .map(Collections::singletonList)
+                        .orElse(Collections.emptyList()))
                 .build();
         return new MoquetteServerInitializingBean(ipfsMqttServerTwo, config, handlers, authenticator, authorizator);
     }
 
     @Bean
-    public PublishInternalMqttIpfsSubscriber ipfsSubcriberServerOne(IpfsService ipfsService,
+    public PublishInternalMqttIpfsSubscriber ipfsSubcriberServerOne(@Qualifier("mqttIpfsBridgeOne") Mqttable mqttable,
                                                                     @Qualifier("ipfsMqttServerOne") IpfsableMqttServer serverOne) {
-        return new PublishInternalMqttIpfsSubscriber(ipfsService, serverOne);
+        return new PublishInternalMqttIpfsSubscriber(mqttable, serverOne);
     }
 
     @Bean
-    public PublishInternalMqttIpfsSubscriber ipfsSubcriberServerTwo(IpfsService ipfsService,
+    public PublishInternalMqttIpfsSubscriber ipfsSubcriberServerTwo(@Qualifier("mqttIpfsBridgeTwo") Mqttable mqttable,
                                                                     @Qualifier("ipfsMqttServerTwo") IpfsableMqttServer serverTwo) {
-        return new PublishInternalMqttIpfsSubscriber(ipfsService, serverTwo);
+        return new PublishInternalMqttIpfsSubscriber(mqttable, serverTwo);
     }
 
-    private Server createMoquetteServer() {
+    private ServerWithInternalPublish createMoquetteServer() {
         return new ServerWithInternalPublish();
     }
 

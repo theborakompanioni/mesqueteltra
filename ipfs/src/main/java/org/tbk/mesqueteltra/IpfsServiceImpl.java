@@ -10,9 +10,7 @@ import io.vertx.core.json.Json;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -23,19 +21,12 @@ import static java.util.Objects.requireNonNull;
 
 @Slf4j
 public class IpfsServiceImpl implements IpfsService {
-
-    public static final String TOPIC_SUBSTITUE = "mqtt-to-ipfs";
     private final static BaseEncoding BASE64_URLSAFE = BaseEncoding.base64Url();
 
     private final IPFS ipfs;
-    private final ConnectableFlux<IpfsMsg> publish;
 
     public IpfsServiceImpl(IPFS ipfs) {
         this.ipfs = requireNonNull(ipfs);
-
-        this.publish = subscribeToAll(ipfs)
-                .subscribeOn(Schedulers.newSingle("ipfs-service-subscribe-to-all"))
-                .publish();
     }
 
     @Override
@@ -71,7 +62,7 @@ public class IpfsServiceImpl implements IpfsService {
 
                         String encodedMsg = BASE64_URLSAFE.encode(payloadJson.getBytes(Charsets.UTF_8));
 
-                        return Optional.ofNullable(ipfs.pubsub.pub(TOPIC_SUBSTITUE, encodedMsg));
+                        return Optional.ofNullable(ipfs.pubsub.pub(topic, encodedMsg));
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
@@ -80,20 +71,7 @@ public class IpfsServiceImpl implements IpfsService {
 
     @Override
     public Flux<IpfsMsg> subscribe(String topic) {
-        return this.subscribeToAll()
-                .filter(msg -> {
-                    if (msg.getTopicIds().contains(topic)) {
-                        return true;
-                    } else {
-                        log.debug("Drop message because of mismatching topic : {} not in {}", msg.getTopicIds());
-                        return false;
-                    }
-                });
-    }
-
-    @Override
-    public Flux<IpfsMsg> subscribeToAll() {
-        return publish.autoConnect();
+        return subscribeToIpfs(ipfs, topic);
     }
 
     private static Optional<IpfsMsg> tryParseAsIpfsMsg(Map<String, ?> map) {
@@ -127,10 +105,10 @@ public class IpfsServiceImpl implements IpfsService {
         }
     }
 
-    private static Flux<IpfsMsg> subscribeToAll(IPFS ipfs) {
-        final Flux<Map<String, ?>> topic = Flux.create(fluxSink -> {
+    private static Flux<IpfsMsg> subscribeToIpfs(IPFS ipfs, String topic) {
+        final Flux<Map<String, ?>> ipfsMessageFlux = Flux.create(fluxSink -> {
             try {
-                final Supplier<Object> sub = ipfs.pubsub.sub(TOPIC_SUBSTITUE);
+                final Supplier<Object> sub = ipfs.pubsub.sub(topic);
 
                 while (true) {
                     final Object o = sub.get();
@@ -156,7 +134,7 @@ public class IpfsServiceImpl implements IpfsService {
             }
         });
 
-        return topic.map(map -> {
+        return ipfsMessageFlux.map(map -> {
             Optional<IpfsMsg> msg = tryParseAsIpfsMsg(map);
 
             if (!msg.isPresent()) {
@@ -165,7 +143,15 @@ public class IpfsServiceImpl implements IpfsService {
             return msg;
         })
                 .filter(Optional::isPresent)
-                .map(Optional::get);
+                .map(Optional::get)
+                .retry(e -> {
+                    log.warn("Error occurred while subscribing to all topics: {}", e.getMessage());
+                    return true;
+                })
+                .repeat(() -> {
+                    log.info("Will be repeating subscribing to all topics");
+                    return true;
+                });
     }
 
     @Data

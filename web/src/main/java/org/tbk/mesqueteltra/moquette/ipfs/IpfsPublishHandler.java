@@ -1,29 +1,21 @@
 package org.tbk.mesqueteltra.moquette.ipfs;
 
-import com.google.common.base.Charsets;
-import com.google.common.util.concurrent.RateLimiter;
 import io.moquette.interception.InterceptHandler;
 import io.moquette.interception.messages.*;
-import io.vertx.core.json.Json;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.mqtt.MqttMessageBuilders;
+import io.netty.handler.codec.mqtt.MqttPublishMessage;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.tbk.mesqueteltra.IpfsService;
-import org.tbk.mesqueteltra.moquette.config.IpfsableMqttServer;
-import org.tbk.mesqueteltra.moquette.config.ServerWithInternalPublish;
-import reactor.core.scheduler.Schedulers;
-
-import java.util.UUID;
-
-import static java.util.Objects.requireNonNull;
+import org.tbk.mesqueteltra.mqtt.Mqttable;
 
 @Slf4j
 public class IpfsPublishHandler implements InterceptHandler {
 
+    private final Mqttable mqttable;
 
-    private final IpfsableMqttServer ipfsableMqttServer;
-
-    public IpfsPublishHandler(IpfsableMqttServer ipfsableMqttServer) {
-        this.ipfsableMqttServer = ipfsableMqttServer;
+    public IpfsPublishHandler(Mqttable mqttable) {
+        this.mqttable = mqttable;
     }
 
     @Override
@@ -52,17 +44,19 @@ public class IpfsPublishHandler implements InterceptHandler {
 
     @Override
     public void onPublish(InterceptPublishMessage msg) {
-        final String content = msg.getPayload().toString(Charsets.UTF_8);
+        MqttPublishMessage mqttMessage = MqttMessageBuilders.publish()
+                .topicName(msg.getTopicName())
+                .retained(msg.isRetainFlag())
+                .qos(msg.getQos())
+                .payload(Unpooled.copiedBuffer(msg.getPayload()))
+                .build();
 
-        IpfsMqttDto dto = new IpfsMqttDto();
-        dto.setClientId(msg.getClientID());
-        dto.setTopic(msg.getTopicName());
-        dto.setContent(content);
-        dto.setQos(msg.getQos().value());
-        dto.setRetained(msg.isRetainFlag());
-        dto.setDuplicate(msg.isDupFlag());
-
-        ipfsableMqttServer.publishToIpfsOnly(dto);
+        mqttable.publish(mqttMessage, msg.getClientID())
+                .subscribe(next -> {
+                    log.debug("successfully published PUBLISH msg via IPFS");
+                }, e -> {
+                    log.debug("error while publishing PUBLISH msg via IPFS: {}", e.getMessage());
+                });
     }
 
     @Override
