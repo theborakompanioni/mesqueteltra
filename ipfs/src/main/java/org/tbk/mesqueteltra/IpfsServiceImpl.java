@@ -15,6 +15,7 @@ import reactor.core.publisher.Flux;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
@@ -108,21 +109,17 @@ public class IpfsServiceImpl implements IpfsService {
     private static Flux<IpfsMsg> subscribeToIpfs(IPFS ipfs, String topic) {
         final Flux<Map<String, ?>> ipfsMessageFlux = Flux.create(fluxSink -> {
             try {
-                final Supplier<Object> sub = ipfs.pubsub.sub(topic);
+                final Supplier<CompletableFuture<Map<String, Object>>> sub = ipfs.pubsub.sub(topic);
 
                 while (true) {
-                    final Object o = sub.get();
+                    final CompletableFuture<Map<String, Object>> f = sub.get();
                     if (fluxSink.isCancelled()) {
                         return;
                     }
 
-                    if (o != null) {
-                        if (Map.class.isAssignableFrom(o.getClass())) {
-                            Map<String, ?> map = (Map<String, ?>) o;
-                            fluxSink.next(map);
-                        } else {
-                            log.warn("Refuse to emit message - object not of instance Map: {}", o);
-                        }
+                    if (f != null) {
+                        Map<String, Object> map = f.get();
+                        fluxSink.next(map);
                     }
 
                     if (fluxSink.isCancelled()) {
