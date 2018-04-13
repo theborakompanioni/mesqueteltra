@@ -23,7 +23,7 @@ import static java.util.Objects.requireNonNull;
 public class MqttIpfsServiceImpl implements Mqttable {
 
     // we do not want to spam the network - its a demo!
-    private final RateLimiter rateLimiter = RateLimiter.create(100);
+    private final RateLimiter rateLimiter = RateLimiter.create(1_000_000);
 
     public static final String TOPIC_SUBSTITUTE = "mqtt-to-ipfs";
 

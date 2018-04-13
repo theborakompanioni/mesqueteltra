@@ -51,6 +51,8 @@ public class IpfsPublishHandler implements InterceptHandler {
                 .payload(Unpooled.copiedBuffer(msg.getPayload()))
                 .build();
 
+        log.debug("publishing PUBLISH msg via IPFS");
+
         mqttable.publish(mqttMessage, msg.getClientID())
                 .subscribe(next -> {
                     log.debug("successfully published PUBLISH msg via IPFS");

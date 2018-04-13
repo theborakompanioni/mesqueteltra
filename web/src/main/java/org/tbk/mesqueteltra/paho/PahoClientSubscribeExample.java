@@ -1,6 +1,8 @@
 package org.tbk.mesqueteltra.paho;
 
 import com.google.common.base.Charsets;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.mqtt.MqttMessageBuilders;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
@@ -8,13 +10,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.tbk.mesqueteltra.IpfsService;
+import org.tbk.mesqueteltra.moquette.config.ServerWithInternalPublish;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Optional;
@@ -22,6 +28,10 @@ import java.util.function.Supplier;
 
 @Slf4j
 public class PahoClientSubscribeExample implements ApplicationListener<ApplicationReadyEvent> {
+
+    @Autowired
+    @Qualifier("mqttServerTwo")
+    ServerWithInternalPublish mqttServerTwo;
 
     @Autowired
     @Qualifier("mqttClient")
@@ -69,12 +79,29 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
     public void onApplicationEvent(ApplicationReadyEvent event) {
         try {
             subscribe();
-
-            publishHelloWorldMessage();
-
         } catch (MqttException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Scheduled(fixedRate = 1000 * 20)
+    public void repeartWithCronJob() {
+        printStats();
+
+        publishHelloWorldMessage();
+
+        mqttServerTwo.internalPublish(MqttMessageBuilders.publish()
+                .topicName("/time")
+                .retained(true)
+                .qos(MqttQoS.AT_LEAST_ONCE)
+                .payload(Unpooled.copiedBuffer(LocalDateTime.now().toString().getBytes(Charsets.UTF_8)))
+                .build(), "INTRLPUB");
+    }
+
+    private void printStats() {
+        log.info("[A] client : connected=" + mqttClientA.isConnected());
+        log.info("[B] client : connected=" + mqttClientB.isConnected());
+        log.info("[X] client : connected=" + mqttClient.isConnected());
     }
 
     private void publishHelloWorldMessage() {
@@ -84,11 +111,11 @@ public class PahoClientSubscribeExample implements ApplicationListener<Applicati
     }
 
     private void subscribe() throws MqttException {
-        ipfsService.ifPresent(ipfsService -> Flux.from(ipfsService.subscribe("/time"))
+        Disposable ipfsTimeSubcriptionOrNull = ipfsService.map(ipfsService -> Flux.from(ipfsService.subscribe("/time"))
                 .subscribeOn(Schedulers.newSingle("ipfs-subscribe"))
                 .subscribe(msg -> {
                     log.info("Message arrived via IPFS on topic {}: {}", msg.getTopicIds(), msg.getDataAsString());
-                }));
+                })).orElse(null);
 
         mqttClientA.subscribe("/#", new IMqttMessageListener() {
             @Override
